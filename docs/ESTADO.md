@@ -22,6 +22,9 @@ _Última actualización: 2026-10-28_
 ## Bloqueos
 - Ninguno.
 
+## Deuda técnica
+- Los datos derivados de `Project` (`progress`, `milestones_done`, `milestones_total`, `days_since_activity`) son atributos transitorios del modelo. Refactor futuro: el service devuelve un schema de lectura.
+
 ## Decisiones recientes
 - `pyproject` limita el descubrimiento de paquetes a `app*` (si no, `pip install -e` falla por el layout plano).
 - Python 3.13 local, `requires-python >=3.12`; sin versiones fijas en `pyproject` por ahora.

@@ -49,6 +49,7 @@ Reglas:
 - Todo se aísla por `user_id`: hitos y decisiones lo heredan vía `projects`; las ideas lo llevan directo (pueden no tener proyecto). Los services reciben `user_id` y filtran por él.
 - Una idea asignada a un proyecto debe pertenecer al mismo `user_id` que el proyecto; lo valida el service (la BD solo garantiza que la idea tenga dueño).
 - `get_current_user` (`app/deps.py`) es el único punto que decide quién es el usuario: en modo un solo usuario devuelve (creándolo si falta) el de `TELEGRAM_ALLOWED_USER_ID`, o el local por defecto (`telegram_id` NULL) si está vacío. Es lo único a reemplazar por auth real.
+- Progreso: `hechos * 100 // total`, se trunca (1 de 3 = 33). Solo vale 100 si todos los hitos están hechos; sin hitos es 0.
 - Máximo `MAX_ACTIVE_PROJECTS` en `active`; activar sin `next_action` se rechaza.
 - Crear, completar o reabrir un hito, y crear una idea o decisión, actualiza `last_activity_at` del proyecto.
 
