@@ -12,3 +12,7 @@ class ActiveLimitReached(DomainError):
 
 class NextActionRequired(DomainError):
     pass
+
+
+class MilestoneNotFound(DomainError):
+    pass
