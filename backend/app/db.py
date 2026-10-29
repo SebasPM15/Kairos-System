@@ -1,0 +1,25 @@
+from collections.abc import Iterator
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+
+from app.config import get_settings
+
+_database_url = get_settings().database_url
+# SQLite connections are shared across FastAPI's worker threads
+_connect_args = {"check_same_thread": False} if _database_url.startswith("sqlite") else {}
+
+engine = create_engine(_database_url, connect_args=_connect_args)
+SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+def get_db() -> Iterator[Session]:
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
