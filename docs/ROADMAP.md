@@ -6,7 +6,7 @@
 2. [x] Docker: Dockerfiles + docker-compose.yml + .dockerignore
 3. [x] Modelos SQLAlchemy + migración inicial Alembic
 4. [x] CRUD de proyectos con límite de activos y próxima acción obligatoria al activar
-5. [ ] Hitos + cálculo de porcentaje
+5. [x] Hitos + cálculo de porcentaje
 6. [ ] Ideas (incluye bandeja de entrada sin proyecto) y decisiones
 7. [ ] Tests de services y API
 8. [ ] Bot de Telegram: `/proyecto /idea /hito /hecho /estado /foco /decision`; filtro por TELEGRAM_ALLOWED_USER_ID
