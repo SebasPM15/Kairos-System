@@ -24,3 +24,11 @@ class IdeaNotFound(DomainError):
 
 class DecisionNotFound(DomainError):
     pass
+
+
+class VaultNotConfigured(DomainError):
+    pass
+
+
+class UnsafeVaultPath(DomainError):
+    pass

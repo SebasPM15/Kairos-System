@@ -57,6 +57,11 @@ _DOMAIN_MESSAGES = {
         "Pausa o termina uno antes de activar otro."
     ),
     errors.NextActionRequired: lambda e: "Un proyecto activo necesita una próxima acción.",
+    errors.VaultNotConfigured: lambda e: (
+        "El vault de Obsidian no está configurado. "
+        "Define OBSIDIAN_VAULT_PATH con una carpeta que exista."
+    ),
+    errors.UnsafeVaultPath: lambda e: "Una ruta del export queda fuera del vault; no se escribió nada.",
 }
 
 
