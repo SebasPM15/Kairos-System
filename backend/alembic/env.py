@@ -29,6 +29,11 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     with engine.connect() as connection:
+        if connection.dialect.name == "sqlite":
+            # Batch mode drops and recreates tables; with FKs on, dropping projects
+            # would cascade-delete its milestones/decisions. Must run before any transaction.
+            connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
+            connection.commit()
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
