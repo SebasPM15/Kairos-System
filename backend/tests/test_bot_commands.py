@@ -103,6 +103,38 @@ def test_hecho_marks_done_and_reports_progress(session, me):
     assert "50% (1/2)" in reply
 
 
+def test_hecho_suggests_terminar_when_progress_reaches_100(session, me):
+    project = make_project(session, me)
+    commands.hito(session, me, "kairos: a")
+    milestone = session.scalar(select(Milestone))
+
+    reply = commands.hecho(session, me, str(milestone.id))
+
+    assert "100% (1/1)" in reply
+    assert messages.all_milestones_done("kairos") in reply
+    assert "/terminar kairos" in reply
+    session.refresh(project)
+    assert project.status is ProjectStatus.IDEA
+
+
+def test_hecho_below_100_has_no_suggestion(session, me):
+    make_project(session, me)
+    commands.hito(session, me, "kairos: a")
+    commands.hito(session, me, "kairos: b")
+    first = session.scalars(select(Milestone).order_by(Milestone.id)).first()
+
+    assert "/terminar" not in commands.hecho(session, me, str(first.id))
+
+
+def test_hecho_on_a_done_project_has_no_suggestion(session, me):
+    make_project(session, me)
+    commands.hito(session, me, "kairos: a")
+    milestone = session.scalar(select(Milestone))
+    commands.terminar(session, me, "kairos")
+
+    assert "/terminar" not in commands.hecho(session, me, str(milestone.id))
+
+
 def test_hecho_unknown_milestone(session, me):
     assert commands.hecho(session, me, "999") == messages.error_message(MilestoneNotFound())
 
@@ -156,6 +188,64 @@ def test_foco_without_next_action_shows_usage(session, me):
 
     assert commands.foco(session, me, "kairos") == messages.USAGE["foco"]
     assert commands.foco(session, me, "kairos:  ") == messages.USAGE["foco"]
+
+
+def test_ayuda_lists_every_command_without_emojis(session, me):
+    reply = commands.ayuda(session, me, "")
+
+    for command in ("proyecto", "idea", "hito", "hecho", "estado", "foco", "decision", "pausa", "terminar"):
+        assert f"/{command}" in reply
+    assert all(ord(char) < 0x2000 for char in reply)
+
+
+def test_pausa_pauses_and_keeps_next_action(session, me):
+    project = make_project(session, me)
+    commands.foco(session, me, "kairos: escribir tests")
+
+    reply = commands.pausa(session, me, "kairos")
+
+    session.refresh(project)
+    assert project.status is ProjectStatus.PAUSED
+    assert project.next_action == "escribir tests"
+    assert "pausa" in reply
+
+
+def test_pausa_frees_an_active_slot(session, me):
+    for name in ("A", "B", "C"):
+        make_project(session, me, name)
+    commands.foco(session, me, "a: x")
+    commands.foco(session, me, "b: x")
+
+    commands.pausa(session, me, "a")
+
+    assert "activo" in commands.foco(session, me, "c: x")
+
+
+def test_pausa_unknown_slug(session, me):
+    assert commands.pausa(session, me, "nope") == messages.error_message(ProjectNotFound())
+
+
+def test_pausa_without_slug_shows_usage(session, me):
+    assert commands.pausa(session, me, " ") == messages.USAGE["pausa"]
+
+
+def test_terminar_marks_the_project_done(session, me):
+    project = make_project(session, me)
+    commands.foco(session, me, "kairos: x")
+
+    reply = commands.terminar(session, me, "kairos")
+
+    session.refresh(project)
+    assert project.status is ProjectStatus.DONE
+    assert "terminado" in reply
+
+
+def test_terminar_unknown_slug(session, me):
+    assert commands.terminar(session, me, "nope") == messages.error_message(ProjectNotFound())
+
+
+def test_terminar_without_slug_shows_usage(session, me):
+    assert commands.terminar(session, me, "") == messages.USAGE["terminar"]
 
 
 def test_decision_records_title_and_rationale(session, me):

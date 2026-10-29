@@ -154,12 +154,46 @@ def test_callback_from_a_stranger_is_ignored_in_silence(handlers, session):
     update.callback_query.edit_message_text.assert_not_awaited()
 
 
+@pytest.mark.parametrize("name", ["start", "ayuda"])
+def test_start_and_ayuda_reply_with_help_to_the_allowed_user(handlers, name):
+    update = message_update(ALLOWED_ID, f"/{name}")
+    command = commands.ayuda
+    asyncio.run(handlers._command(command)(update, None))
+
+    update.message.reply_text.assert_awaited_once_with(messages.HELP)
+
+
+@pytest.mark.parametrize("name", ["ayuda", "pausa", "terminar"])
+def test_new_commands_ignore_strangers(handlers, session, name):
+    update = message_update(STRANGER_ID, f"/{name} kairos")
+
+    run_command(handlers, name, update)
+
+    update.message.reply_text.assert_not_awaited()
+
+
+def test_pausa_and_terminar_through_the_handler(handlers, session):
+    run_command(handlers, "proyecto", message_update(ALLOWED_ID, "/proyecto Kairos"))
+    pause = message_update(ALLOWED_ID, "/pausa kairos")
+    finish = message_update(ALLOWED_ID, "/terminar kairos")
+
+    run_command(handlers, "pausa", pause)
+    session.expire_all()
+    assert session.scalar(select(Project)).status.value == "paused"
+    run_command(handlers, "terminar", finish)
+    session.expire_all()
+    assert session.scalar(select(Project)).status.value == "done"
+
+
 def test_create_bot_registers_every_command_and_the_callback():
     application = create_bot(Settings(telegram_bot_token="123:fake", telegram_allowed_user_id=ALLOWED_ID))
 
     handlers = application.handlers[0]
     names = {c for h in handlers if isinstance(h, CommandHandler) for c in h.commands}
-    assert names == {"proyecto", "idea", "hito", "hecho", "estado", "foco", "decision"}
+    assert names == {
+        "proyecto", "idea", "hito", "hecho", "estado", "foco", "decision",
+        "pausa", "terminar", "ayuda", "start",
+    }
     assert any(isinstance(h, CallbackQueryHandler) for h in handlers)
 
 
