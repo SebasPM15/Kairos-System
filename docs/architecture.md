@@ -46,6 +46,26 @@ Reglas:
 - Desarrollo diario nativo (`uvicorn --reload`, `pnpm dev`); Docker sirve para ejecutar el sistema completo.
 - Obsidian es solo una carpeta de Markdown: el export funciona sin tener Obsidian instalado.
 
+## Bot de Telegram
+
+Long polling, en el mismo proceso que FastAPI. Los handlers son delgados: validan el comando, llaman a `services/` y responden; no tienen lógica de negocio.
+
+**Seguridad**: solo atiende al usuario cuyo ID está en `TELEGRAM_ALLOWED_USER_ID`. Los mensajes de cualquier otro usuario se ignoran en silencio (sin respuesta).
+
+**Comandos**: el proyecto se identifica por su slug, antes de los dos puntos. Solo los hitos usan ID numérico.
+
+| comando | efecto |
+|---|---|
+| `/proyecto <nombre>` | crea el proyecto en estado `idea` |
+| `/idea [slug:] <texto>` | sin slug va a la bandeja de entrada |
+| `/hito <slug>: <título>` | crea un hito |
+| `/hecho [id]` | marca el hito como hecho; sin argumento, muestra botones con los hitos pendientes |
+| `/estado [slug]` | todos los proyectos, o uno con sus hitos y su ID |
+| `/foco <slug>: <próxima acción>` | activa el proyecto y fija la próxima acción en un solo paso; si se alcanza el límite de activos, lo rechaza con un mensaje claro (409 en la API) |
+| `/decision <slug>: <título> \| <porqué>` | registra una decisión con su razón |
+
+**Respuestas**: en español, sin emojis o mínimos. Los errores de dominio (límite de activos, proyecto inexistente, falta de próxima acción) los traducen los handlers a mensajes claros.
+
 ## Endpoints
 
 | método | ruta | descripción |
