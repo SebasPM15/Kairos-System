@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 import app.models  # noqa: F401  (registers tables on Base.metadata)
 from app.config import Settings
 from app.db import Base
-from app.models import User
+from app.models import Project, User
 from app.models.base import utcnow
 from app.schemas.milestone import MilestoneCreate, MilestoneUpdate
 from app.schemas.project import ProjectCreate
@@ -48,8 +48,9 @@ def milestones(session, user):
 
 
 @pytest.fixture
-def project(projects):
-    return projects.create(ProjectCreate(name="A"))
+def project(projects, session):
+    # The ORM entity: tests mutate last_activity_at directly
+    return session.get(Project, projects.create(ProjectCreate(name="A")).id)
 
 
 def add(milestones, project, *titles):
@@ -161,7 +162,7 @@ def test_delete_closes_position_gaps(milestones, project):
 
 
 def test_create_complete_and_reopen_touch_project_activity(projects, milestones, project):
-    stale = projects.get(project.id)
+    stale = project
 
     age(stale)
     (milestone,) = add(milestones, project, "a")
@@ -178,7 +179,7 @@ def test_create_complete_and_reopen_touch_project_activity(projects, milestones,
 
 def test_edit_title_reorder_and_delete_do_not_touch_activity(projects, milestones, project):
     first, second = add(milestones, project, "a", "b")
-    stale = projects.get(project.id)
+    stale = project
     age(stale)
 
     milestones.update(first.id, MilestoneUpdate(title="renamed"))

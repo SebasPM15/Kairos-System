@@ -10,7 +10,7 @@ from app.models import Project, ProjectStatus
 from app.models.base import utcnow
 from app.repositories.milestone_repository import MilestoneRepository
 from app.repositories.project_repository import ProjectRepository
-from app.schemas.project import ProjectCreate, ProjectUpdate
+from app.schemas.project import ProjectCreate, ProjectRead, ProjectUpdate
 from app.services.errors import ActiveLimitReached, NextActionRequired, ProjectNotFound
 from app.services.milestone_service import calculate_progress
 
@@ -35,7 +35,7 @@ class ProjectService:
         self._repo = repository or ProjectRepository(session)
         self._milestones = milestones or MilestoneRepository(session)
 
-    def create(self, data: ProjectCreate) -> Project:
+    def create(self, data: ProjectCreate) -> ProjectRead:
         project = Project(
             user_id=self._user_id,
             name=data.name,
@@ -45,15 +45,15 @@ class ProjectService:
         )
         self._repo.add(project)
         self._session.commit()
-        return self._with_progress([project])[0]
+        return self._to_reads([project])[0]
 
-    def list(self) -> list[Project]:
-        return self._with_progress(self._repo.list_by_user(self._user_id))
+    def list(self) -> list[ProjectRead]:
+        return self._to_reads(self._repo.list_by_user(self._user_id))
 
-    def get(self, project_id: int) -> Project:
-        return self._with_progress([self._find(project_id)])[0]
+    def get(self, project_id: int) -> ProjectRead:
+        return self._to_reads([self._find(project_id)])[0]
 
-    def update(self, project_id: int, data: ProjectUpdate) -> Project:
+    def update(self, project_id: int, data: ProjectUpdate) -> ProjectRead:
         project = self._find(project_id)
         changes = data.model_dump(exclude_unset=True)
         for field in ("name", "description", "status"):
@@ -67,7 +67,7 @@ class ProjectService:
             setattr(project, field, value)
         project.last_activity_at = utcnow()
         self._session.commit()
-        return self._with_progress([project])[0]
+        return self._to_reads([project])[0]
 
     def delete(self, project_id: int) -> None:
         self._repo.delete(self._find(project_id))
@@ -79,15 +79,18 @@ class ProjectService:
             raise ProjectNotFound(project_id)
         return project
 
-    def _with_progress(self, projects: list[Project]) -> list[Project]:
-        """Attach derived milestone counts as transient attributes; they are never persisted."""
+    def _to_reads(self, projects: list[Project]) -> list[ProjectRead]:
+        """Single place where derived milestone figures are computed; they are never persisted."""
         counts = self._milestones.counts_by_project(self._user_id, [p.id for p in projects])
+        reads = []
         for project in projects:
             done, total = counts.get(project.id, (0, 0))
-            project.milestones_done = done
-            project.milestones_total = total
-            project.progress = calculate_progress(done, total)
-        return projects
+            reads.append(
+                ProjectRead.from_project(
+                    project, done=done, total=total, progress=calculate_progress(done, total)
+                )
+            )
+        return reads
 
     def _check_activation(self, project: Project, changes: dict) -> None:
         status = changes.get("status", project.status)

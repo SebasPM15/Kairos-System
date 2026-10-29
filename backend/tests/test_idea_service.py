@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 import app.models  # noqa: F401  (registers tables on Base.metadata)
 from app.config import Settings
 from app.db import Base
-from app.models import User
+from app.models import Project, User
 from app.models.base import utcnow
 from app.schemas.idea import IdeaCreate, IdeaUpdate
 from app.schemas.project import ProjectCreate
@@ -50,7 +50,9 @@ def ideas(session, user):
 
 @pytest.fixture
 def project(session, user):
-    return ProjectService(session, user.id, Settings()).create(ProjectCreate(name="A"))
+    created = ProjectService(session, user.id, Settings()).create(ProjectCreate(name="A"))
+    # The ORM entity: tests mutate last_activity_at directly
+    return session.get(Project, created.id)
 
 
 @pytest.fixture

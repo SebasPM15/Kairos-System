@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
-from app.models import ProjectStatus
+from app.models import Project, ProjectStatus
 
 
 class ProjectCreate(BaseModel):
@@ -29,10 +29,26 @@ class ProjectRead(BaseModel):
     next_action: str | None
     last_activity_at: datetime
     created_at: datetime
-    # Derived by ProjectService from milestones; never stored
+    # Derived from milestones by ProjectService (the only builder); never stored
     progress: int = Field(ge=0, le=100)
     milestones_done: int
     milestones_total: int
+
+    @classmethod
+    def from_project(cls, project: Project, *, done: int, total: int, progress: int) -> "ProjectRead":
+        return cls(
+            id=project.id,
+            name=project.name,
+            slug=project.slug,
+            description=project.description,
+            status=project.status,
+            next_action=project.next_action,
+            last_activity_at=project.last_activity_at,
+            created_at=project.created_at,
+            progress=progress,
+            milestones_done=done,
+            milestones_total=total,
+        )
 
     @computed_field
     @property
