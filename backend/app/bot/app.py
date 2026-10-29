@@ -35,8 +35,9 @@ class BotHandlers:
         self._session_factory = session_factory
 
     def register(self, application: Application) -> None:
-        for name in ("proyecto", "idea", "hito", "foco", "decision", "estado"):
+        for name in ("proyecto", "idea", "hito", "foco", "decision", "estado", "pausa", "terminar", "ayuda"):
             application.add_handler(CommandHandler(name, self._command(getattr(commands, name))))
+        application.add_handler(CommandHandler("start", self._command(commands.ayuda)))
         application.add_handler(CommandHandler("hecho", self.hecho))
         application.add_handler(
             CallbackQueryHandler(self.hecho_callback, pattern=f"^{DONE_CALLBACK_PREFIX}")

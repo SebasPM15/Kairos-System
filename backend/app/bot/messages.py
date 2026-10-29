@@ -17,7 +17,29 @@ USAGE = {
     "hecho": "Uso: /hecho <id>",
     "foco": "Uso: /foco <slug>: <próxima acción>",
     "decision": "Uso: /decision <slug>: <título> | <porqué>",
+    "pausa": "Uso: /pausa <slug>",
+    "terminar": "Uso: /terminar <slug>",
 }
+
+HELP = "\n".join(
+    [
+        "Comandos:",
+        "/proyecto <nombre>",
+        "/idea [slug:] <texto>",
+        "/hito <slug>: <título>",
+        "/hecho [id]",
+        "/estado [slug]",
+        "/foco <slug>: <próxima acción>",
+        "/decision <slug>: <título> | <porqué>",
+        "/pausa <slug>",
+        "/terminar <slug>",
+        "/ayuda",
+    ]
+)
+
+
+def all_milestones_done(slug: str) -> str:
+    return f"Todos los hitos de {slug} están hechos. Usa /terminar {slug} o agrega más hitos con /hito."
 
 NO_PROJECTS = "Aún no tienes proyectos. Crea uno con /proyecto <nombre>."
 NO_PENDING_MILESTONES = "No tienes hitos pendientes."

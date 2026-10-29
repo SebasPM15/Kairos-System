@@ -101,10 +101,43 @@ def hecho(session: Session, user_id: int, args: str) -> str:
         return messages.USAGE["hecho"]
     milestone = MilestoneService(session, user_id).update(milestone_id, MilestoneUpdate(done=True))
     project = _projects(session, user_id).get(milestone.project_id)
-    return (
-        f"Hecho: #{milestone.id} {milestone.title}\n"
-        f"{project.name}: {project.progress}% ({project.milestones_done}/{project.milestones_total})"
-    )
+    lines = [
+        f"Hecho: #{milestone.id} {milestone.title}",
+        f"{project.name}: {project.progress}% ({project.milestones_done}/{project.milestones_total})",
+    ]
+    # Only a hint: the status never changes on its own
+    if project.progress == 100 and project.status is not ProjectStatus.DONE:
+        lines.append(messages.all_milestones_done(project.slug))
+    return "\n".join(lines)
+
+
+@_reply
+def ayuda(session: Session, user_id: int, args: str) -> str:
+    return messages.HELP
+
+
+def _set_status(session: Session, user_id: int, slug: str, status: ProjectStatus) -> ProjectRead:
+    service = _projects(session, user_id)
+    project = _by_slug(service.list(), slug)
+    return service.update(project.id, ProjectUpdate(status=status))
+
+
+@_reply
+def pausa(session: Session, user_id: int, args: str) -> str:
+    slug = args.strip().lower()
+    if not slug:
+        return messages.USAGE["pausa"]
+    project = _set_status(session, user_id, slug, ProjectStatus.PAUSED)
+    return f"{project.name} en pausa. La próxima acción se conserva."
+
+
+@_reply
+def terminar(session: Session, user_id: int, args: str) -> str:
+    slug = args.strip().lower()
+    if not slug:
+        return messages.USAGE["terminar"]
+    project = _set_status(session, user_id, slug, ProjectStatus.DONE)
+    return f"{project.name} terminado."
 
 
 @_reply
