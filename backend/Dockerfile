@@ -7,6 +7,8 @@ WORKDIR /srv
 
 COPY pyproject.toml constraints.txt ./
 COPY app ./app
+COPY alembic.ini entrypoint.sh ./
+COPY alembic ./alembic
 RUN pip install --no-cache-dir -c constraints.txt .
 
 # /data and /vault are created owned by the app user so a fresh named volume inherits it
@@ -16,4 +18,5 @@ RUN useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin kairos \
 USER kairos
 
 EXPOSE 8000
+ENTRYPOINT ["sh", "/srv/entrypoint.sh"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
