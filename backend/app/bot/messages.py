@@ -1,5 +1,6 @@
 """Spanish texts of the bot and the single mapping from domain errors to messages."""
 
+from app.bot.catalog import help_text
 from app.models import ProjectStatus
 from app.schemas.export import ExportSummary
 from app.services import errors
@@ -22,22 +23,7 @@ USAGE = {
     "terminar": "Uso: /terminar <slug>",
 }
 
-HELP = "\n".join(
-    [
-        "Comandos:",
-        "/proyecto <nombre>",
-        "/idea [slug:] <texto>",
-        "/hito <slug>: <título>",
-        "/hecho [id]",
-        "/estado [slug]",
-        "/foco <slug>: <próxima acción>",
-        "/decision <slug>: <título> | <porqué>",
-        "/pausa <slug>",
-        "/terminar <slug>",
-        "/exportar",
-        "/ayuda",
-    ]
-)
+HELP = help_text()
 
 
 def all_milestones_done(slug: str) -> str:

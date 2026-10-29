@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.bot.app import bot_lifespan
 from app.config import get_settings
-from app.routers import decisions, export, health, ideas, milestones, projects
+from app.routers import bot, decisions, export, health, ideas, milestones, projects
 
 
 def create_app() -> FastAPI:
@@ -31,6 +31,7 @@ def create_app() -> FastAPI:
     app.include_router(ideas.router)
     app.include_router(decisions.router)
     app.include_router(export.router)
+    app.include_router(bot.router)
     return app
 
 

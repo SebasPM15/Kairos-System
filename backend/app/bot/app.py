@@ -7,10 +7,11 @@ from contextlib import asynccontextmanager
 from typing import TypeVar
 
 from sqlalchemy.orm import Session
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import BotCommand, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, ApplicationBuilder, CallbackQueryHandler, CommandHandler, ContextTypes
 
 from app.bot import commands, messages
+from app.bot.catalog import COMMAND_CATALOG
 from app.config import Settings
 from app.db import SessionLocal
 from app.services.user_service import UserService
@@ -35,8 +36,9 @@ class BotHandlers:
         self._session_factory = session_factory
 
     def register(self, application: Application) -> None:
-        for name in ("proyecto", "idea", "hito", "foco", "decision", "estado", "pausa", "terminar", "exportar", "ayuda"):
-            application.add_handler(CommandHandler(name, self._command(getattr(commands, name))))
+        for info in COMMAND_CATALOG:
+            if info.name != "hecho":
+                application.add_handler(CommandHandler(info.name, self._command(getattr(commands, info.name))))
         application.add_handler(CommandHandler("start", self._command(commands.ayuda)))
         application.add_handler(CommandHandler("hecho", self.hecho))
         application.add_handler(
@@ -129,6 +131,7 @@ async def bot_lifespan(
             await application.updater.start_polling()
             started = True
             logger.info("Telegram bot started")
+            await register_menu(application)
         except Exception as error:
             # Only the class name: some Telegram errors echo the token in their message
             logger.error("Telegram bot failed to start (%s); the API keeps running", type(error).__name__)
@@ -138,6 +141,16 @@ async def bot_lifespan(
     finally:
         if started:
             await _shutdown(application)
+
+
+async def register_menu(application: Application) -> None:
+    """Publish the command menu from the catalog; a failure never stops the bot."""
+    try:
+        await application.bot.set_my_commands(
+            [BotCommand(info.name, info.description) for info in COMMAND_CATALOG]
+        )
+    except Exception as error:
+        logger.error("Telegram command menu was not registered (%s)", type(error).__name__)
 
 
 async def _shutdown(application: Application) -> None:
