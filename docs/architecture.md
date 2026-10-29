@@ -39,14 +39,15 @@ Sin login ni contraseñas. Hoy opera un solo usuario; el modelo existe para pode
 
 **milestones**: id, project_id → projects, title, done (bool), position (int, orden manual dentro del proyecto), completed_at (nullable; lo pone el service al marcar hecho y lo limpia al reabrir), created_at.
 
-**ideas**: id, project_id → projects (**nullable**, bandeja de entrada), content, created_at.
+**ideas**: id, user_id → users (NOT NULL, `ON DELETE CASCADE`), project_id → projects (**nullable**, bandeja de entrada; `ON DELETE SET NULL`), content, created_at.
 
 **decisions**: id, project_id → projects, title, rationale (el porqué), created_at.
 
-Relaciones: un usuario tiene muchos proyectos (al borrarlo se borran en cascada, y de ahí hitos y decisiones). Un proyecto tiene muchos hitos, ideas y decisiones. Al borrar un proyecto: `milestones` y `decisions` en cascada; `ideas` con `ON DELETE SET NULL` (vuelven a la bandeja de entrada). El porcentaje no se guarda: `completed / total` de hitos (0 si no hay hitos).
+Relaciones: un usuario tiene muchos proyectos (al borrarlo se borran en cascada, y de ahí hitos y decisiones). Un proyecto tiene muchos hitos, ideas y decisiones. Al borrar un proyecto: `milestones` y `decisions` en cascada; `ideas` con `ON DELETE SET NULL` (vuelven a la bandeja de entrada, conservando su `user_id`). El porcentaje no se guarda: `completed / total` de hitos (0 si no hay hitos).
 
 Reglas:
-- Todo se aísla por `user_id` vía `projects` (hitos, ideas y decisiones lo heredan por su proyecto). Los services reciben `user_id` y filtran por él.
+- Todo se aísla por `user_id`: hitos y decisiones lo heredan vía `projects`; las ideas lo llevan directo (pueden no tener proyecto). Los services reciben `user_id` y filtran por él.
+- Una idea asignada a un proyecto debe pertenecer al mismo `user_id` que el proyecto; lo valida el service (la BD solo garantiza que la idea tenga dueño).
 - `get_current_user` (`app/deps.py`) es el único punto que decide quién es el usuario: en modo un solo usuario devuelve (creándolo si falta) el de `TELEGRAM_ALLOWED_USER_ID`, o el local por defecto (`telegram_id` NULL) si está vacío. Es lo único a reemplazar por auth real.
 - Máximo `MAX_ACTIVE_PROJECTS` en `active`; activar sin `next_action` se rechaza.
 - Crear, completar o reabrir un hito, y crear una idea o decisión, actualiza `last_activity_at` del proyecto.
