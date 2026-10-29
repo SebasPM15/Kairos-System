@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 import app.models  # noqa: F401  (registers tables on Base.metadata)
 from app.db import Base
-from app.models import Decision, Idea, Milestone, Project, ProjectStatus
+from app.models import Decision, Idea, Milestone, Project, ProjectStatus, User
 
 
 @pytest.fixture
@@ -17,12 +17,20 @@ def session(tmp_path):
     engine.dispose()
 
 
-def make_project(slug: str = "kairos") -> Project:
-    return Project(name="Kairos", slug=slug)
+@pytest.fixture
+def user(session):
+    user = User()
+    session.add(user)
+    session.commit()
+    return user
 
 
-def test_project_defaults_and_utc_timestamps(session):
-    project = make_project()
+def make_project(user: User, slug: str = "kairos") -> Project:
+    return Project(name="Kairos", slug=slug, user_id=user.id)
+
+
+def test_project_defaults_and_utc_timestamps(session, user):
+    project = make_project(user)
     session.add(project)
     session.commit()
     session.refresh(project)
@@ -33,8 +41,8 @@ def test_project_defaults_and_utc_timestamps(session):
     assert project.last_activity_at.tzinfo is not None
 
 
-def test_project_with_children(session):
-    project = make_project()
+def test_project_with_children(session, user):
+    project = make_project(user)
     project.milestones = [Milestone(title="B", position=1), Milestone(title="A", position=0)]
     project.ideas = [Idea(content="idea")]
     project.decisions = [Decision(title="SQLite", rationale="local first")]
@@ -47,8 +55,8 @@ def test_project_with_children(session):
     assert project.decisions[0].rationale == "local first"
 
 
-def test_deleting_project_cascades_and_orphans_ideas(session):
-    project = make_project()
+def test_deleting_project_cascades_and_orphans_ideas(session, user):
+    project = make_project(user)
     project.milestones = [Milestone(title="m")]
     project.decisions = [Decision(title="d", rationale="r")]
     project.ideas = [Idea(content="i")]
@@ -72,10 +80,10 @@ def test_idea_can_live_in_inbox(session):
     assert session.scalars(select(Idea)).one().project_id is None
 
 
-def test_slug_is_unique(session):
-    session.add(make_project("same"))
+def test_slug_is_unique(session, user):
+    session.add(make_project(user, "same"))
     session.commit()
-    session.add(make_project("same"))
+    session.add(make_project(user, "same"))
 
     with pytest.raises(IntegrityError):
         session.commit()
