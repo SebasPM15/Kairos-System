@@ -81,6 +81,11 @@ Long polling, en el mismo proceso que FastAPI. Los handlers son delgados: valida
 | `/estado [slug]` | todos los proyectos (estado, progreso, días sin tocar, próxima acción), o uno con sus hitos y su ID |
 | `/foco <slug>: <próxima acción>` | activa el proyecto y fija la próxima acción en un solo paso; si se alcanza el límite de activos, lo rechaza con un mensaje claro (409 en la API) |
 | `/decision <slug>: <título> \| <porqué>` | registra una decisión con su razón |
+| `/pausa <slug>` | pasa el proyecto a `paused` y conserva la próxima acción; libera un cupo de activos |
+| `/terminar <slug>` | pasa el proyecto a `done` |
+| `/ayuda`, `/start` | lista de comandos con su sintaxis |
+
+`/hecho` no cambia el estado: si el hito completado deja el proyecto al 100 %, añade una línea sugiriendo `/terminar` o agregar más hitos.
 
 **Respuestas**: en español, sin emojis o mínimos. Los errores de dominio (límite de activos, proyecto inexistente, falta de próxima acción, hito inexistente) los traduce `messages.error_message`. Las respuestas se truncan a 4096 caracteres.
 
