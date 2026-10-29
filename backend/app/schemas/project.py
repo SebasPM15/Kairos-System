@@ -29,6 +29,10 @@ class ProjectRead(BaseModel):
     next_action: str | None
     last_activity_at: datetime
     created_at: datetime
+    # Derived by ProjectService from milestones; never stored
+    progress: int = Field(ge=0, le=100)
+    milestones_done: int
+    milestones_total: int
 
     @computed_field
     @property

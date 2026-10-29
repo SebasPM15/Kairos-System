@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 import unicodedata
 
@@ -6,9 +8,11 @@ from sqlalchemy.orm import Session
 from app.config import Settings
 from app.models import Project, ProjectStatus
 from app.models.base import utcnow
+from app.repositories.milestone_repository import MilestoneRepository
 from app.repositories.project_repository import ProjectRepository
 from app.schemas.project import ProjectCreate, ProjectUpdate
 from app.services.errors import ActiveLimitReached, NextActionRequired, ProjectNotFound
+from app.services.milestone_service import calculate_progress
 
 
 def slugify(name: str) -> str:
@@ -23,11 +27,13 @@ class ProjectService:
         user_id: int,
         settings: Settings,
         repository: ProjectRepository | None = None,
+        milestones: MilestoneRepository | None = None,
     ) -> None:
         self._session = session
         self._user_id = user_id
         self._settings = settings
         self._repo = repository or ProjectRepository(session)
+        self._milestones = milestones or MilestoneRepository(session)
 
     def create(self, data: ProjectCreate) -> Project:
         project = Project(
@@ -39,19 +45,16 @@ class ProjectService:
         )
         self._repo.add(project)
         self._session.commit()
-        return project
+        return self._with_progress([project])[0]
 
     def list(self) -> list[Project]:
-        return self._repo.list_by_user(self._user_id)
+        return self._with_progress(self._repo.list_by_user(self._user_id))
 
     def get(self, project_id: int) -> Project:
-        project = self._repo.get(self._user_id, project_id)
-        if project is None:
-            raise ProjectNotFound(project_id)
-        return project
+        return self._with_progress([self._find(project_id)])[0]
 
     def update(self, project_id: int, data: ProjectUpdate) -> Project:
-        project = self.get(project_id)
+        project = self._find(project_id)
         changes = data.model_dump(exclude_unset=True)
         for field in ("name", "description", "status"):
             if changes.get(field) is None:
@@ -64,11 +67,27 @@ class ProjectService:
             setattr(project, field, value)
         project.last_activity_at = utcnow()
         self._session.commit()
-        return project
+        return self._with_progress([project])[0]
 
     def delete(self, project_id: int) -> None:
-        self._repo.delete(self.get(project_id))
+        self._repo.delete(self._find(project_id))
         self._session.commit()
+
+    def _find(self, project_id: int) -> Project:
+        project = self._repo.get(self._user_id, project_id)
+        if project is None:
+            raise ProjectNotFound(project_id)
+        return project
+
+    def _with_progress(self, projects: list[Project]) -> list[Project]:
+        """Attach derived milestone counts as transient attributes; they are never persisted."""
+        counts = self._milestones.counts_by_project(self._user_id, [p.id for p in projects])
+        for project in projects:
+            done, total = counts.get(project.id, (0, 0))
+            project.milestones_done = done
+            project.milestones_total = total
+            project.progress = calculate_progress(done, total)
+        return projects
 
     def _check_activation(self, project: Project, changes: dict) -> None:
         status = changes.get("status", project.status)

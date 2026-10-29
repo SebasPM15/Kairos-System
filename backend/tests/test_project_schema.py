@@ -13,6 +13,9 @@ def read(last_activity_at: datetime) -> ProjectRead:
         next_action=None,
         last_activity_at=last_activity_at,
         created_at=last_activity_at,
+        progress=0,
+        milestones_done=0,
+        milestones_total=0,
     )
 
 
