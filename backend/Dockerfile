@@ -5,9 +5,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /srv
 
-COPY pyproject.toml ./
+COPY pyproject.toml constraints.txt ./
 COPY app ./app
-RUN pip install --no-cache-dir .
+RUN pip install --no-cache-dir -c constraints.txt .
 
 # /data and /vault are created owned by the app user so a fresh named volume inherits it
 RUN useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin kairos \
