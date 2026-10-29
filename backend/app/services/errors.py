@@ -16,3 +16,11 @@ class NextActionRequired(DomainError):
 
 class MilestoneNotFound(DomainError):
     pass
+
+
+class IdeaNotFound(DomainError):
+    pass
+
+
+class DecisionNotFound(DomainError):
+    pass
