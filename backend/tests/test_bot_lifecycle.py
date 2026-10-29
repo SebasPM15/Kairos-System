@@ -25,6 +25,7 @@ def fake_application(**overrides):
     application.stop = AsyncMock()
     application.shutdown = AsyncMock()
     application.updater.start_polling = AsyncMock()
+    application.bot.set_my_commands = AsyncMock()
     application.updater.stop = AsyncMock()
     application.updater.running = True
     application.running = True
