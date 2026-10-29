@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.bot import messages
 from app.bot.parsing import parse_id, parse_idea, split_slug, split_title_rationale
 from app.config import get_settings
+from app.exporters.project_exporter import build_exporter
 from app.models import ProjectStatus
 from app.schemas.decision import DecisionCreate
 from app.schemas.idea import IdeaCreate
@@ -114,6 +115,12 @@ def hecho(session: Session, user_id: int, args: str) -> str:
 @_reply
 def ayuda(session: Session, user_id: int, args: str) -> str:
     return messages.HELP
+
+
+@_reply
+def exportar(session: Session, user_id: int, args: str) -> str:
+    summary = build_exporter(session, user_id, get_settings()).export()
+    return messages.export_summary(summary)
 
 
 def _set_status(session: Session, user_id: int, slug: str, status: ProjectStatus) -> ProjectRead:

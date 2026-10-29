@@ -1,6 +1,7 @@
 """Spanish texts of the bot and the single mapping from domain errors to messages."""
 
 from app.models import ProjectStatus
+from app.schemas.export import ExportSummary
 from app.services import errors
 
 STATUS_LABELS = {
@@ -33,6 +34,7 @@ HELP = "\n".join(
         "/decision <slug>: <título> | <porqué>",
         "/pausa <slug>",
         "/terminar <slug>",
+        "/exportar",
         "/ayuda",
     ]
 )
@@ -71,6 +73,17 @@ def error_message(error: Exception) -> str:
         if cls in _DOMAIN_MESSAGES:
             return _DOMAIN_MESSAGES[cls](error)
     return UNEXPECTED_ERROR
+
+
+def export_summary(summary: ExportSummary) -> str:
+    projects = "proyecto" if summary.projects_exported == 1 else "proyectos"
+    lines = [
+        f"Export listo: {summary.projects_exported} {projects}, "
+        f"{summary.files_written} archivos escritos, {summary.files_unchanged} sin cambios."
+    ]
+    if summary.orphans:
+        lines.append(f"Carpetas huérfanas (no se tocaron): {', '.join(summary.orphans)}")
+    return "\n".join(lines)
 
 
 def days_label(days: int) -> str:
