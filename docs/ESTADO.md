@@ -1,21 +1,23 @@
 # Estado
 
-_Última actualización: 2026-10-28_
+_Última actualización: 2026-10-29_
 
 ## Hecho
 - Esqueleto del backend (carpetas, `__init__.py`, `pyproject.toml` mínimo) y `.env.example`.
 - Frontend de V0 copiado a `frontend/`. Instala y compila (`pnpm build` OK, `tsc --noEmit` OK). Usa datos mock.
+- Hito 1: `config.py` (Settings), `db.py` (engine, SessionLocal, Base, `get_db`), `create_app()` con CORS, `GET /health` y `tests/test_health.py` (pasa). `uvicorn app.main:app` arranca y responde.
 - Documentos base: CLAUDE.md, ROADMAP, architecture.
 
 - `.claude/settings.json` sin coautoría de Claude; commits locales reescritos para quitarla (aún no estaban en el remoto).
 
 ## Sigue
-- Esperar revisión del usuario; luego hito 1 de v0.1: app FastAPI + `/health`, y después Docker (hito 2).
+- Hito 2 de v0.1: Docker (Dockerfiles + docker-compose.yml + .dockerignore).
 
 ## Bloqueos
 - Ninguno.
 
 ## Decisiones recientes
+- `pyproject` limita el descubrimiento de paquetes a `app*` (si no, `pip install -e` falla por el layout plano).
 - Python 3.13 local, `requires-python >=3.12`; sin versiones fijas en `pyproject` por ahora.
 - pnpm vía corepack (12.3.4, versión válida).
 - Estados en inglés (`idea|active|paused|done`); traducción en UI y bot.
