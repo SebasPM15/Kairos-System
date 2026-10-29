@@ -193,7 +193,7 @@ def test_foco_without_next_action_shows_usage(session, me):
 def test_ayuda_lists_every_command_without_emojis(session, me):
     reply = commands.ayuda(session, me, "")
 
-    for command in ("proyecto", "idea", "hito", "hecho", "estado", "foco", "decision", "pausa", "terminar"):
+    for command in ("proyecto", "idea", "hito", "hecho", "estado", "foco", "decision", "pausa", "terminar", "exportar"):
         assert f"/{command}" in reply
     assert all(ord(char) < 0x2000 for char in reply)
 
@@ -335,3 +335,50 @@ def test_pending_milestones_lists_only_unfinished_ones(session, me):
     pending = commands.pending_milestones(session, me)
 
     assert [label for _, label in pending] == ["kairos: dos"]
+
+
+@pytest.fixture
+def vault(tmp_path, monkeypatch):
+    root = tmp_path / "vault"
+    root.mkdir()
+    monkeypatch.setattr(
+        commands, "get_settings", lambda: Settings(max_active_projects=2, obsidian_vault_path=str(root))
+    )
+    return root
+
+
+def test_exportar_writes_the_vault_and_summarises_in_spanish(session, me, vault):
+    make_project(session, me)
+
+    reply = commands.exportar(session, me, "")
+
+    assert reply == "Export listo: 1 proyecto, 5 archivos escritos, 0 sin cambios."
+    assert (vault / "Kairos" / "kairos" / "README.md").is_file()
+
+
+def test_exportar_twice_reports_no_changes(session, me, vault):
+    make_project(session, me)
+    commands.exportar(session, me, "")
+
+    assert commands.exportar(session, me, "") == "Export listo: 1 proyecto, 0 archivos escritos, 5 sin cambios."
+
+
+def test_exportar_lists_orphan_folders(session, me, vault):
+    (vault / "Kairos" / "viejo").mkdir(parents=True)
+
+    reply = commands.exportar(session, me, "")
+
+    assert "0 proyectos" in reply
+    assert "Carpetas huérfanas (no se tocaron): viejo" in reply
+
+
+def test_exportar_only_exports_the_users_projects(session, users, vault):
+    make_project(session, users[1].id, "Ajeno")
+
+    commands.exportar(session, users[0].id, "")
+
+    assert not (vault / "Kairos" / "ajeno").exists()
+
+
+def test_exportar_without_a_vault_explains_how_to_configure_it(session, me):
+    assert "OBSIDIAN_VAULT_PATH" in commands.exportar(session, me, "")

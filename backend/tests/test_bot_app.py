@@ -192,7 +192,7 @@ def test_create_bot_registers_every_command_and_the_callback():
     names = {c for h in handlers if isinstance(h, CommandHandler) for c in h.commands}
     assert names == {
         "proyecto", "idea", "hito", "hecho", "estado", "foco", "decision",
-        "pausa", "terminar", "ayuda", "start",
+        "pausa", "terminar", "exportar", "ayuda", "start",
     }
     assert any(isinstance(h, CallbackQueryHandler) for h in handlers)
 
@@ -206,3 +206,19 @@ def test_create_bot_is_disabled_without_full_configuration(token, user_id, caplo
     assert create_bot(settings) is None
     assert "Telegram bot disabled" in caplog.text
 
+
+
+def test_exportar_through_the_handler_replies_to_the_allowed_user_only(handlers, monkeypatch, tmp_path):
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    monkeypatch.setattr(commands, "get_settings", lambda: Settings(obsidian_vault_path=str(vault)))
+    run_command(handlers, "proyecto", message_update(ALLOWED_ID, "/proyecto Kairos"))
+    allowed = message_update(ALLOWED_ID, "/exportar")
+    stranger = message_update(STRANGER_ID, "/exportar")
+
+    run_command(handlers, "exportar", allowed)
+    run_command(handlers, "exportar", stranger)
+
+    assert allowed.message.reply_text.await_args.args[0].startswith("Export listo: 1 proyecto")
+    stranger.message.reply_text.assert_not_awaited()
+    assert (vault / "Kairos" / "kairos" / "README.md").is_file()

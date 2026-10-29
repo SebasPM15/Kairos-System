@@ -35,3 +35,16 @@ def test_days_label():
     assert messages.days_label(0) == "tocado hoy"
     assert messages.days_label(1) == "1 día sin tocar"
     assert messages.days_label(5) == "5 días sin tocar"
+
+
+def test_export_summary_pluralises_and_lists_orphans():
+    from app.schemas.export import ExportSummary
+
+    one = ExportSummary(projects_exported=1, files_written=5, files_unchanged=0, orphans=[])
+    many = ExportSummary(projects_exported=3, files_written=0, files_unchanged=13, orphans=["a", "b"])
+
+    assert messages.export_summary(one) == "Export listo: 1 proyecto, 5 archivos escritos, 0 sin cambios."
+    assert messages.export_summary(many).splitlines() == [
+        "Export listo: 3 proyectos, 0 archivos escritos, 13 sin cambios.",
+        "Carpetas huérfanas (no se tocaron): a, b",
+    ]
