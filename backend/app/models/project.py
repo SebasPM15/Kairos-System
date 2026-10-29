@@ -2,7 +2,7 @@ import enum
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Enum, String, Text
+from sqlalchemy import Enum, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from app.models.decision import Decision
     from app.models.idea import Idea
     from app.models.milestone import Milestone
+    from app.models.user import User
 
 
 class ProjectStatus(str, enum.Enum):
@@ -23,10 +24,12 @@ class ProjectStatus(str, enum.Enum):
 
 class Project(Base):
     __tablename__ = "projects"
+    __table_args__ = (UniqueConstraint("user_id", "slug", name="uq_projects_user_id_slug"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     name: Mapped[str] = mapped_column(String(200))
-    slug: Mapped[str] = mapped_column(String(200), unique=True)
+    slug: Mapped[str] = mapped_column(String(200))
     description: Mapped[str] = mapped_column(Text, default="")
     # Persist the lowercase values ("idea"), not the member names
     status: Mapped[ProjectStatus] = mapped_column(
@@ -37,6 +40,7 @@ class Project(Base):
     last_activity_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
 
+    user: Mapped["User"] = relationship(back_populates="projects")
     milestones: Mapped[list["Milestone"]] = relationship(
         back_populates="project",
         cascade="all, delete-orphan",
