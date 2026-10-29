@@ -1,0 +1,29 @@
+# Estado
+
+_Última actualización: 2026-10-28_
+
+## Hecho
+- Esqueleto del backend (carpetas, `__init__.py`, `pyproject.toml` mínimo) y `.env.example`.
+- Frontend de V0 copiado a `frontend/`. Instala y compila (`pnpm build` OK, `tsc --noEmit` OK). Usa datos mock.
+- Documentos base: CLAUDE.md, ROADMAP, architecture.
+
+## Sigue
+- Esperar revisión del usuario; luego hito 1 de v0.1: app FastAPI + `/health`.
+
+## Bloqueos
+- Ninguno.
+
+## Decisiones recientes
+- Python 3.13 local, `requires-python >=3.12`; sin versiones fijas en `pyproject` por ahora.
+- pnpm vía corepack (12.3.4, versión válida).
+- Estados en inglés (`idea|active|paused|done`); traducción en UI y bot.
+- `ideas.project_id` nullable (bandeja de entrada); `projects.slug` para la carpeta de Obsidian.
+
+## Adaptaciones pendientes del frontend
+1. `lib/api.ts`: cambiar mocks por `fetch` a `NEXT_PUBLIC_API_URL`; habilitar CORS en FastAPI.
+2. `lib/types.ts`: IDs numéricos, estados en inglés con etiquetas en español, `ideas`/`decisions` como listas; porcentaje y días sin tocar calculados por el backend.
+3. Límite de activos: hoy 3 fijo con `window.confirm`; debe ser rechazo del servidor (409) según config.
+4. Tabs Ideas/Decisiones vacías: faltan listas y alta.
+5. Faltan crear proyecto/hito, estados de carga y error.
+6. Quitar `@vercel/analytics`, `generator: 'v0.app'`, `ignoreBuildErrors`; marca “Enfoque” → “Kairos”; `name` del package.
+7. Dividir `project-dashboard.tsx` (un solo componente denso) en componentes pequeños.
