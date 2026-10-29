@@ -1,6 +1,6 @@
 # Estado
 
-_Última actualización: 2026-10-28_
+_Última actualización: 2026-10-29_
 
 ## Hecho
 - Esqueleto del backend (carpetas, `__init__.py`, `pyproject.toml` mínimo) y `.env.example`.
@@ -16,13 +16,15 @@ _Última actualización: 2026-10-28_
 - Hito 7: tests y deuda. `pytest-cov` como dependencia de desarrollo (`constraints.txt` regenerado). Tests transversales: aislamiento entre usuarios en todos los routers, flujo completo (progress, `last_activity_at`, límite de activos), `alembic upgrade head` + `alembic check` sobre BD vacía, y cada error de dominio -> 404/409/422 (con un test que falla si se añade un error sin mapear). `ProjectService` ahora devuelve `ProjectRead`. 131 tests pasan; cobertura 99% (`pytest --cov=app --cov-report=term-missing`): lo único sin cubrir es `get_db`, que los tests sustituyen por override. Verificado en Docker (up, `/health`, `/projects`, down) y datos de prueba eliminados.
 - Hito 8: bot de Telegram. `UserService.get_or_create_user` (lo reutiliza `get_current_user`), `app/bot/` con `parsing.py`, `messages.py`, `commands.py` y `app.py` (handlers finos, filtro por `TELEGRAM_ALLOWED_USER_ID` también en callbacks, `/hecho` sin argumento con InlineKeyboard) y arranque/parada del long polling en el lifespan de `create_app`. 214 tests pasan, todos sin red. **No probado contra Telegram real** (pendiente de hacer a mano).
 - Pulido del bot: `/start` y `/ayuda` (lista de comandos), `/pausa <slug>` y `/terminar <slug>` (vía `ProjectService.update`), y aviso en `/hecho` al llegar al 100 % (solo sugerencia, no cambia el estado). 231 tests pasan, sin red. Sigue sin probarse contra Telegram real.
+- Hito 9: export al vault de Obsidian. `app/exporters/` (`markdown.py` puro, `vault.py` con `VaultWriter`/`FileSystemVaultWriter`, `project_exporter.py`), `POST /export` y `/exportar` en el bot; `VaultNotConfigured` y `UnsafeVaultPath` mapeados a 409 y a mensajes del bot. 316 tests pasan (1 se omite si no hay symlinks de archivo; en Windows los de carpeta usan junctions). Verificado en Docker con el bind mount `vault-dev`: el usuario no root (uid 10001) escribe, el segundo export no escribe nada, las carpetas huérfanas se informan y no se tocan; datos de prueba y `vault-dev/Kairos` eliminados.
 - Documentos base: CLAUDE.md, ROADMAP, architecture.
 
 - `.claude/settings.json` sin coautoría de Claude; commits locales reescritos para quitarla (aún no estaban en el remoto).
 
 ## Sigue
 - Probar el bot contra Telegram real (token y `TELEGRAM_ALLOWED_USER_ID` en `.env`).
-- Hito 9 de v0.1: export a Markdown hacia el vault de Obsidian.
+- Hito 10 de v0.1: dashboard conectado a la API (ver "Adaptaciones pendientes del frontend").
+- Probar `/exportar` y abrir el vault real en Obsidian (hasta ahora solo probado con `vault-dev`).
 
 ## Bloqueos
 - Ninguno.
@@ -59,6 +61,9 @@ _Última actualización: 2026-10-28_
 
 - Ideas: en PATCH, `project_id` ausente = sin cambio y `null` = vuelve a la bandeja (`model_fields_set`); `content` no admite `null`. Crear en un proyecto o asignar a uno distinto actualiza `last_activity_at`; bandeja, desasignar, editar contenido y borrar no. `POST /projects/{id}/ideas` usa el proyecto de la ruta e ignora `project_id` del cuerpo.
 - Decisiones: sin edición; crear actualiza `last_activity_at`, borrar no. Título y porqué se recortan y no pueden quedar vacíos (422).
+
+- Export: el frontmatter guarda `status` en inglés (valor estable de BD) y el cuerpo lo muestra en español. `last_activity` en ISO UTC con segundos. Los hitos se ordenan por `position`; ideas y decisiones por ID (cronológico). Los títulos de hitos/proyectos se colapsan a una línea; las ideas multilínea se indentan bajo su viñeta. Los tests de symlink crean junctions en Windows si no hay privilegio de symlink.
+- En la BD de Docker quedaron un proyecto "Kairos" (id 1) y una idea suelta de sesiones anteriores; no se tocaron.
 
 ## Adaptaciones pendientes del frontend
 1. `lib/api.ts`: cambiar mocks por `fetch` a `NEXT_PUBLIC_API_URL`; habilitar CORS en FastAPI.

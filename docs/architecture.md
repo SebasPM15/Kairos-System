@@ -83,11 +83,42 @@ Long polling, en el mismo proceso que FastAPI. Los handlers son delgados: valida
 | `/decision <slug>: <título> \| <porqué>` | registra una decisión con su razón |
 | `/pausa <slug>` | pasa el proyecto a `paused` y conserva la próxima acción; libera un cupo de activos |
 | `/terminar <slug>` | pasa el proyecto a `done` |
+| `/exportar` | exporta al vault de Obsidian y responde con el resumen (proyectos, archivos escritos, sin cambios, carpetas huérfanas) |
 | `/ayuda`, `/start` | lista de comandos con su sintaxis |
 
 `/hecho` no cambia el estado: si el hito completado deja el proyecto al 100 %, añade una línea sugiriendo `/terminar` o agregar más hitos.
 
 **Respuestas**: en español, sin emojis o mínimos. Los errores de dominio (límite de activos, proyecto inexistente, falta de próxima acción, hito inexistente) los traduce `messages.error_message`. Las respuestas se truncan a 4096 caracteres.
+
+## Export al vault de Obsidian
+
+La BD es la fuente de verdad; el vault es una exportación de solo escritura (los cambios manuales se sobrescriben). Se dispara con `POST /export` o `/exportar` en el bot, y solo exporta los proyectos del usuario actual.
+
+**Estructura** (bajo `Kairos/` dentro del vault):
+
+```
+Kairos/
+  _bandeja.md              ideas sin proyecto
+  <slug>/
+    README.md              frontmatter YAML + estado, progreso, próxima acción y descripción
+    hitos.md               checklist "- [x]" / "- [ ]" ordenado por position
+    ideas.md               ideas del proyecto, con fecha
+    decisiones.md          título, fecha y porqué de cada decisión
+```
+
+Todo en español; cada archivo lleva al inicio el aviso "Generado por Kairos desde la base de datos; los cambios manuales se sobrescriben" (en `README.md`, justo después del frontmatter para que Obsidian lo lea como propiedades). El frontmatter tiene `status` (valor en inglés, estable para consultas), `progress`, `milestones_done`, `milestones_total`, `next_action` y `last_activity` (ISO UTC). No incluye datos que cambien solos con el tiempo (como los días sin tocar), para que un export sin cambios reales no reescriba nada.
+
+**Estructura del código** (`app/exporters/`): `markdown.py` (funciones puras de renderizado), `vault.py` (interfaz `VaultWriter` e implementación `FileSystemVaultWriter`) y `project_exporter.py` (`ProjectExporter`, que lee `ProjectRead` y las listas de hitos, ideas y decisiones desde los services, nunca por SQL; `build_exporter` es el único cableado, compartido por la API y el bot).
+
+**Reglas**:
+- **Rutas seguras**: cada ruta se resuelve y debe quedar dentro de `Kairos/`, que a su vez debe quedar dentro del vault; un slug con `..`, separadores o ruta absoluta, o un symlink que salga, lanza `UnsafeVaultPath` (409). Nunca se escribe fuera.
+- **Nunca borrar**: una carpeta `Kairos/<carpeta>/` sin proyecto se informa como huérfana y no se toca (tampoco se borran archivos sueltos).
+- **Idempotente y mínimo**: escritura atómica (archivo temporal en la misma carpeta + `os.replace`, con permisos 0644) y no se reescribe un archivo cuyo contenido no cambió.
+- **Frontmatter seguro**: los strings se serializan con `json.dumps` (YAML válido), así `next_action` con dos puntos, comillas o saltos de línea no rompe el YAML.
+- **Vault no configurado**: con `OBSIDIAN_VAULT_PATH` vacío o una raíz que no existe se lanza `VaultNotConfigured` (409; mensaje propio en el bot). La raíz del vault nunca se crea; `Kairos/` sí.
+- Un vault pertenece a un solo usuario: las carpetas de otros usuarios cuentan como huérfanas y dos usuarios con el mismo slug se pisarían. Hoy opera un solo usuario.
+
+**Respuesta** de `POST /export`: `{projects_exported, files_written, files_unchanged, orphans}`.
 
 ## Endpoints
 
@@ -102,6 +133,6 @@ Long polling, en el mismo proceso que FastAPI. Los handlers son delgados: valida
 | GET, POST | /ideas | bandeja de entrada (sin proyecto) |
 | PATCH, DELETE | /ideas/{id} | asignar a proyecto / borrar |
 | GET, POST | /projects/{id}/decisions | listar / crear |
-| POST | /export | exportar al vault de Obsidian |
+| POST | /export | exportar al vault de Obsidian; devuelve el resumen (proyectos, archivos escritos, sin cambios, carpetas huérfanas) |
 
-Errores: 404 no existe, 409 límite de activos, 422 validación (p. ej. sin próxima acción).
+Errores: 404 no existe, 409 límite de activos o vault no configurado / ruta fuera del vault, 422 validación (p. ej. sin próxima acción).
