@@ -7,8 +7,10 @@ _Última actualización: 2026-10-28_
 - Frontend de V0 copiado a `frontend/`. Instala y compila (`pnpm build` OK, `tsc --noEmit` OK). Usa datos mock.
 - Documentos base: CLAUDE.md, ROADMAP, architecture.
 
+- `.claude/settings.json` sin coautoría de Claude; commits locales reescritos para quitarla (aún no estaban en el remoto).
+
 ## Sigue
-- Esperar revisión del usuario; luego hito 1 de v0.1: app FastAPI + `/health`.
+- Esperar revisión del usuario; luego hito 1 de v0.1: app FastAPI + `/health`, y después Docker (hito 2).
 
 ## Bloqueos
 - Ninguno.
@@ -18,6 +20,9 @@ _Última actualización: 2026-10-28_
 - pnpm vía corepack (12.3.4, versión válida).
 - Estados en inglés (`idea|active|paused|done`); traducción en UI y bot.
 - `ideas.project_id` nullable (bandeja de entrada); `projects.slug` para la carpeta de Obsidian.
+- Hitos: `completed_at` lo gestiona el service; `position` es el orden manual.
+- Borrar proyecto: hitos y decisiones en cascada; ideas `SET NULL`. Hitos/ideas/decisiones actualizan `last_activity_at`.
+- Todo local: Docker Compose (SQLite en `/data`, vault en `/vault`), bot por long polling; desarrollo nativo. Aún sin archivos Docker.
 
 ## Adaptaciones pendientes del frontend
 1. `lib/api.ts`: cambiar mocks por `fetch` a `NEXT_PUBLIC_API_URL`; habilitar CORS en FastAPI.
