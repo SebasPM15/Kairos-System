@@ -3,7 +3,7 @@
 ## v0.1 — base funcional
 
 1. [x] Esqueleto del backend + `GET /health`
-2. [ ] Docker: Dockerfiles + docker-compose.yml + .dockerignore
+2. [x] Docker: Dockerfiles + docker-compose.yml + .dockerignore
 3. [ ] Modelos SQLAlchemy + migración inicial Alembic
 4. [ ] CRUD de proyectos con límite de activos y próxima acción obligatoria al activar
 5. [ ] Hitos + cálculo de porcentaje
