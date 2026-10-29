@@ -17,13 +17,17 @@ _Última actualización: 2026-10-29_
 - Hito 8: bot de Telegram. `UserService.get_or_create_user` (lo reutiliza `get_current_user`), `app/bot/` con `parsing.py`, `messages.py`, `commands.py` y `app.py` (handlers finos, filtro por `TELEGRAM_ALLOWED_USER_ID` también en callbacks, `/hecho` sin argumento con InlineKeyboard) y arranque/parada del long polling en el lifespan de `create_app`. 214 tests pasan, todos sin red. **No probado contra Telegram real** (pendiente de hacer a mano).
 - Pulido del bot: `/start` y `/ayuda` (lista de comandos), `/pausa <slug>` y `/terminar <slug>` (vía `ProjectService.update`), y aviso en `/hecho` al llegar al 100 % (solo sugerencia, no cambia el estado). 231 tests pasan, sin red. Sigue sin probarse contra Telegram real.
 - Hito 9: export al vault de Obsidian. `app/exporters/` (`markdown.py` puro, `vault.py` con `VaultWriter`/`FileSystemVaultWriter`, `project_exporter.py`), `POST /export` y `/exportar` en el bot; `VaultNotConfigured` y `UnsafeVaultPath` mapeados a 409 y a mensajes del bot. 316 tests pasan (1 se omite si no hay symlinks de archivo; en Windows los de carpeta usan junctions). Verificado en Docker con el bind mount `vault-dev`: el usuario no root (uid 10001) escribe, el segundo export no escribe nada, las carpetas huérfanas se informan y no se tocan; datos de prueba y `vault-dev/Kairos` eliminados.
+- Catálogo único de comandos del bot: `app/bot/catalog.py` alimenta `/ayuda` y `/start`, el menú de Telegram (`set_my_commands` al arrancar; si falla solo se registra el nombre de la excepción) y `GET /bot/commands`. 323 tests pasan, sin red (nuevos en `test_bot_catalog.py`); ningún test existente cambió salvo que el bot falso de `test_bot_lifecycle.py` ahora define `set_my_commands`. Menú **no probado contra Telegram real**.
 - Documentos base: CLAUDE.md, ROADMAP, architecture.
 
 - `.claude/settings.json` sin coautoría de Claude; commits locales reescritos para quitarla (aún no estaban en el remoto).
 
 ## Sigue
 - Probar el bot contra Telegram real (token y `TELEGRAM_ALLOWED_USER_ID` en `.env`).
-- Hito 10 de v0.1: dashboard conectado a la API (ver "Adaptaciones pendientes del frontend").
+- Hito 10 de v0.1: dashboard conectado a la API (ver "Adaptaciones pendientes del frontend"), en tres sesiones:
+  1. Cliente API y limpieza (adaptaciones 1, 2 y 6).
+  2. Proyectos (crear, hitos, límite de activos por 409, estados de carga y error; adaptaciones 3, 5 y 7).
+  3. Bandeja, export y pestaña "Bot" (ideas, decisiones, `POST /export` y los comandos desde `GET /bot/commands`; adaptación 4).
 - Probar `/exportar` y abrir el vault real en Obsidian (hasta ahora solo probado con `vault-dev`).
 
 ## Bloqueos

@@ -64,7 +64,7 @@ Reglas:
 
 Long polling, en el mismo proceso que FastAPI. Los handlers son delgados: validan el comando, llaman a `services/` y responden; no tienen lógica de negocio.
 
-**Estructura** (`app/bot/`): `parsing.py` (funciones puras de argumentos), `messages.py` (textos en español, traducción de estados y el único mapper de errores de dominio a mensajes), `commands.py` (una función por comando: `(session, user_id, args) -> texto`, usa los services), `app.py` (handlers async finos, filtro de usuario y ciclo de vida). Cada comando abre su propia sesión y corre en un hilo (`asyncio.to_thread`); el usuario sale de `UserService.get_or_create_user`, igual que `get_current_user`.
+**Estructura** (`app/bot/`): `catalog.py` (catálogo de comandos, ver abajo), `parsing.py` (funciones puras de argumentos), `messages.py` (textos en español, traducción de estados y el único mapper de errores de dominio a mensajes), `commands.py` (una función por comando: `(session, user_id, args) -> texto`, usa los services), `app.py` (handlers async finos, filtro de usuario y ciclo de vida). Cada comando abre su propia sesión y corre en un hilo (`asyncio.to_thread`); el usuario sale de `UserService.get_or_create_user`, igual que `get_current_user`.
 
 **Seguridad**: solo atiende al usuario cuyo ID está en `TELEGRAM_ALLOWED_USER_ID`. Los mensajes y callbacks de cualquier otro usuario se ignoran en silencio (sin respuesta). El token nunca se registra: los loggers `httpx`/`httpcore` se suben a WARNING (sus URLs llevan el token) y los fallos de arranque solo registran el nombre de la excepción.
 
@@ -87,6 +87,8 @@ Long polling, en el mismo proceso que FastAPI. Los handlers son delgados: valida
 | `/ayuda`, `/start` | lista de comandos con su sintaxis |
 
 `/hecho` no cambia el estado: si el hito completado deja el proyecto al 100 %, añade una línea sugiriendo `/terminar` o agregar más hitos.
+
+**Catálogo** (`app/bot/catalog.py`): `COMMAND_CATALOG` es la única fuente de verdad de los comandos (`name`, `syntax`, `description` en español). De él salen `/ayuda` y `/start` (`messages.HELP`), el menú de Telegram y `GET /bot/commands`. Los handlers de `app.py` se registran recorriendo el catálogo (`/hecho` tiene handler propio y `/start` es un alias de `/ayuda` fuera del catálogo), así que un comando nuevo se declara en el catálogo y en `commands.py`; un test falla si falta uno de los dos. Al arrancar, `register_menu` llama a `set_my_commands` con el catálogo; si falla solo se registra el nombre de la excepción y el bot sigue.
 
 **Respuestas**: en español, sin emojis o mínimos. Los errores de dominio (límite de activos, proyecto inexistente, falta de próxima acción, hito inexistente) los traduce `messages.error_message`. Las respuestas se truncan a 4096 caracteres.
 
@@ -133,6 +135,7 @@ Todo en español; cada archivo lleva al inicio el aviso "Generado por Kairos des
 | GET, POST | /ideas | bandeja de entrada (sin proyecto) |
 | PATCH, DELETE | /ideas/{id} | asignar a proyecto / borrar |
 | GET, POST | /projects/{id}/decisions | listar / crear |
+| GET | /bot/commands | catálogo de comandos del bot (`name`, `syntax`, `description`); estático, no llama a Telegram |
 | POST | /export | exportar al vault de Obsidian; devuelve el resumen (proyectos, archivos escritos, sin cambios, carpetas huérfanas) |
 
 Errores: 404 no existe, 409 límite de activos o vault no configurado / ruta fuera del vault, 422 validación (p. ej. sin próxima acción).
