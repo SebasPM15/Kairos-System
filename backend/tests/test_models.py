@@ -44,7 +44,7 @@ def test_project_defaults_and_utc_timestamps(session, user):
 def test_project_with_children(session, user):
     project = make_project(user)
     project.milestones = [Milestone(title="B", position=1), Milestone(title="A", position=0)]
-    project.ideas = [Idea(content="idea")]
+    project.ideas = [Idea(content="idea", user_id=user.id)]
     project.decisions = [Decision(title="SQLite", rationale="local first")]
     session.add(project)
     session.commit()
@@ -59,7 +59,7 @@ def test_deleting_project_cascades_and_orphans_ideas(session, user):
     project = make_project(user)
     project.milestones = [Milestone(title="m")]
     project.decisions = [Decision(title="d", rationale="r")]
-    project.ideas = [Idea(content="i")]
+    project.ideas = [Idea(content="i", user_id=user.id)]
     session.add(project)
     session.commit()
 
@@ -71,10 +71,11 @@ def test_deleting_project_cascades_and_orphans_ideas(session, user):
     ideas = session.scalars(select(Idea)).all()
     assert len(ideas) == 1
     assert ideas[0].project_id is None
+    assert ideas[0].user_id == user.id
 
 
-def test_idea_can_live_in_inbox(session):
-    session.add(Idea(content="loose thought"))
+def test_idea_can_live_in_inbox(session, user):
+    session.add(Idea(content="loose thought", user_id=user.id))
     session.commit()
 
     assert session.scalars(select(Idea)).one().project_id is None

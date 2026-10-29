@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 import app.models  # noqa: F401  (registers tables on Base.metadata)
 from app import deps
 from app.db import Base
-from app.models import Decision, Milestone, Project, User
+from app.models import Decision, Idea, Milestone, Project, User
 
 
 @pytest.fixture
@@ -70,6 +70,29 @@ def test_deleting_user_cascades_to_projects_and_children(session):
 
     for model in (Project, Milestone, Decision):
         assert session.scalars(select(model)).all() == []
+
+
+def test_idea_requires_owner(session):
+    session.add(Idea(content="ownerless"))
+
+    with pytest.raises(IntegrityError):
+        session.commit()
+
+
+def test_deleting_user_deletes_all_their_ideas(session):
+    user, other = User(), User(telegram_id=2)
+    project = Project(name="X", slug="x")
+    project.ideas = [Idea(content="in project", user=user)]
+    user.projects = [project]
+    user.ideas.append(Idea(content="inbox"))
+    other.ideas = [Idea(content="not mine")]
+    session.add_all([user, other])
+    session.commit()
+
+    session.delete(user)
+    session.commit()
+
+    assert [i.content for i in session.scalars(select(Idea))] == ["not mine"]
 
 
 @pytest.mark.parametrize("telegram_id", [None, 42])

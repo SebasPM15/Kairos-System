@@ -140,13 +140,15 @@ def test_get_missing_raises(service):
 
 def test_delete_orphans_ideas(service, session):
     project = service.create(ProjectCreate(name="A"))
-    session.add(Idea(project_id=project.id, content="i"))
+    session.add(Idea(project_id=project.id, user_id=project.user_id, content="i"))
     session.commit()
 
     service.delete(project.id)
 
     assert session.scalars(select(Project)).all() == []
-    assert session.scalars(select(Idea)).one().project_id is None
+    idea = session.scalars(select(Idea)).one()
+    assert idea.project_id is None
+    assert idea.user_id == project.user_id
 
 
 def test_users_are_isolated(session, service):
