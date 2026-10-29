@@ -64,21 +64,25 @@ Reglas:
 
 Long polling, en el mismo proceso que FastAPI. Los handlers son delgados: validan el comando, llaman a `services/` y responden; no tienen lógica de negocio.
 
-**Seguridad**: solo atiende al usuario cuyo ID está en `TELEGRAM_ALLOWED_USER_ID`. Los mensajes de cualquier otro usuario se ignoran en silencio (sin respuesta).
+**Estructura** (`app/bot/`): `parsing.py` (funciones puras de argumentos), `messages.py` (textos en español, traducción de estados y el único mapper de errores de dominio a mensajes), `commands.py` (una función por comando: `(session, user_id, args) -> texto`, usa los services), `app.py` (handlers async finos, filtro de usuario y ciclo de vida). Cada comando abre su propia sesión y corre en un hilo (`asyncio.to_thread`); el usuario sale de `UserService.get_or_create_user`, igual que `get_current_user`.
+
+**Seguridad**: solo atiende al usuario cuyo ID está en `TELEGRAM_ALLOWED_USER_ID`. Los mensajes y callbacks de cualquier otro usuario se ignoran en silencio (sin respuesta). El token nunca se registra: los loggers `httpx`/`httpcore` se suben a WARNING (sus URLs llevan el token) y los fallos de arranque solo registran el nombre de la excepción.
+
+**Ciclo de vida**: el bot arranca y se detiene en el `lifespan` de `create_app`. Sin `TELEGRAM_BOT_TOKEN` o `TELEGRAM_ALLOWED_USER_ID` no arranca y se registra un aviso; si falla al iniciar, se registra y la API sigue. Long polling exige un solo proceso/worker (no usar `--workers`).
 
 **Comandos**: el proyecto se identifica por su slug, antes de los dos puntos. Solo los hitos usan ID numérico.
 
 | comando | efecto |
 |---|---|
 | `/proyecto <nombre>` | crea el proyecto en estado `idea` |
-| `/idea [slug:] <texto>` | sin slug va a la bandeja de entrada |
+| `/idea [slug:] <texto>` | el prefijo cuenta como slug solo si es un proyecto del usuario; si no, todo el texto es la idea y va a la bandeja |
 | `/hito <slug>: <título>` | crea un hito |
-| `/hecho [id]` | marca el hito como hecho; sin argumento, muestra botones con los hitos pendientes |
-| `/estado [slug]` | todos los proyectos, o uno con sus hitos y su ID |
+| `/hecho [id]` | marca el hito como hecho; sin argumento, muestra botones (`InlineKeyboard`) con los hitos pendientes |
+| `/estado [slug]` | todos los proyectos (estado, progreso, días sin tocar, próxima acción), o uno con sus hitos y su ID |
 | `/foco <slug>: <próxima acción>` | activa el proyecto y fija la próxima acción en un solo paso; si se alcanza el límite de activos, lo rechaza con un mensaje claro (409 en la API) |
 | `/decision <slug>: <título> \| <porqué>` | registra una decisión con su razón |
 
-**Respuestas**: en español, sin emojis o mínimos. Los errores de dominio (límite de activos, proyecto inexistente, falta de próxima acción) los traducen los handlers a mensajes claros.
+**Respuestas**: en español, sin emojis o mínimos. Los errores de dominio (límite de activos, proyecto inexistente, falta de próxima acción, hito inexistente) los traduce `messages.error_message`. Las respuestas se truncan a 4096 caracteres.
 
 ## Endpoints
 

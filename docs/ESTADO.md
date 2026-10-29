@@ -14,12 +14,14 @@ _Última actualización: 2026-10-28_
 - Ideas por usuario: `ideas.user_id` NOT NULL con cascada; migración `b7d2e41a9c15` asigna cada idea al dueño de su proyecto y las huérfanas al usuario configurado (o el más antiguo, o crea uno). 41 tests pasan. Verificado en Docker sobre el volumen existente con ideas sembradas (en proyecto y huérfana): se conservan con su dueño.
 - Hito 6: ideas y decisiones. `schemas/idea.py`, `schemas/decision.py`, repositories filtrados por `user_id`, `IdeaService` y `DecisionService` (`IdeaNotFound`, `DecisionNotFound`), routers `ideas.py` y `decisions.py`. 103 tests pasan. Verificado en Docker con curl (bandeja, asignar/desasignar, 404 a proyecto ajeno, decisión sin rationale -> 422, borrar proyecto deja las ideas en la bandeja) y datos de prueba eliminados.
 - Hito 7: tests y deuda. `pytest-cov` como dependencia de desarrollo (`constraints.txt` regenerado). Tests transversales: aislamiento entre usuarios en todos los routers, flujo completo (progress, `last_activity_at`, límite de activos), `alembic upgrade head` + `alembic check` sobre BD vacía, y cada error de dominio -> 404/409/422 (con un test que falla si se añade un error sin mapear). `ProjectService` ahora devuelve `ProjectRead`. 131 tests pasan; cobertura 99% (`pytest --cov=app --cov-report=term-missing`): lo único sin cubrir es `get_db`, que los tests sustituyen por override. Verificado en Docker (up, `/health`, `/projects`, down) y datos de prueba eliminados.
+- Hito 8: bot de Telegram. `UserService.get_or_create_user` (lo reutiliza `get_current_user`), `app/bot/` con `parsing.py`, `messages.py`, `commands.py` y `app.py` (handlers finos, filtro por `TELEGRAM_ALLOWED_USER_ID` también en callbacks, `/hecho` sin argumento con InlineKeyboard) y arranque/parada del long polling en el lifespan de `create_app`. 214 tests pasan, todos sin red. **No probado contra Telegram real** (pendiente de hacer a mano).
 - Documentos base: CLAUDE.md, ROADMAP, architecture.
 
 - `.claude/settings.json` sin coautoría de Claude; commits locales reescritos para quitarla (aún no estaban en el remoto).
 
 ## Sigue
-- Hito 8 de v0.1: bot de Telegram (`/proyecto /idea /hito /hecho /estado /foco /decision`), usando `ProjectService` (devuelve `ProjectRead`).
+- Probar el bot contra Telegram real (token y `TELEGRAM_ALLOWED_USER_ID` en `.env`).
+- Hito 9 de v0.1: export a Markdown hacia el vault de Obsidian.
 
 ## Bloqueos
 - Ninguno.
@@ -52,6 +54,7 @@ _Última actualización: 2026-10-28_
 - Progreso: `completed * 100 // total` (trunca, así 100 solo si todos están hechos; 0 sin hitos). `ProjectService` devuelve `ProjectRead` (construido solo en `_to_reads`, una consulta agrupada en `list`); `days_since_activity` se calcula en el schema. API, bot y export deben consumir `ProjectRead`, no el ORM. Los tests de services que mutan `last_activity_at` obtienen la entidad con `session.get(Project, id)`.
 - Hitos: `position` va de 0 a n-1 sin huecos; mover o borrar renumera. Una posición mayor que el final se ajusta al final. Marcar hecho/reabrir solo actúa si el estado cambia; en PATCH, `null` significa "sin cambio". Crear, completar y reabrir actualizan `last_activity_at`; editar título/posición y borrar no.
 - Los services reciben `session`, `user_id` y `settings` por constructor; el router los arma con `Depends`.
+- Bot: las funciones de `commands.py` toman `get_settings()` internamente (los tests lo parchean en `app.bot.commands`). El decorador `_reply` mapea errores de dominio/validación y trunca a 4096. Un slug inexistente en `/hito`, `/foco`, `/decision` y `/estado` responde "no existe ese proyecto"; solo `/idea` degrada a bandeja. `/hecho` es idempotente (re-marcar un hito hecho no falla). Si el bot no puede iniciar (token inválido, sin red) se registra solo el nombre de la excepción y la API sigue.
 
 - Ideas: en PATCH, `project_id` ausente = sin cambio y `null` = vuelve a la bandeja (`model_fields_set`); `content` no admite `null`. Crear en un proyecto o asignar a uno distinto actualiza `last_activity_at`; bandeja, desasignar, editar contenido y borrar no. `POST /projects/{id}/ideas` usa el proyecto de la ruta e ignora `project_id` del cuerpo.
 - Decisiones: sin edición; crear actualiza `last_activity_at`, borrar no. Título y porqué se recortan y no pueden quedar vacíos (422).

@@ -9,7 +9,7 @@
 5. [x] Hitos + cálculo de porcentaje
 6. [x] Ideas (incluye bandeja de entrada sin proyecto) y decisiones
 7. [x] Tests de services y API
-8. [ ] Bot de Telegram: `/proyecto /idea /hito /hecho /estado /foco /decision`; filtro por TELEGRAM_ALLOWED_USER_ID
+8. [x] Bot de Telegram: `/proyecto /idea /hito /hecho /estado /foco /decision`; filtro por TELEGRAM_ALLOWED_USER_ID
 9. [ ] Export a Markdown hacia el vault de Obsidian
 10. [ ] Dashboard conectado a la API (reemplazar mocks, ver `docs/ESTADO.md`)
 
