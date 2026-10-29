@@ -13,6 +13,11 @@ pytest                                  # tests
 alembic upgrade head                    # aplicar migraciones
 alembic revision --autogenerate -m "msg"
 
+# Sistema completo (Docker, desde la raíz)
+docker compose up -d
+docker compose down
+docker compose logs -f
+
 # Frontend (desde frontend/)
 pnpm install
 pnpm dev
@@ -29,6 +34,7 @@ Copiar `.env.example` a `.env` y completar. El `.env` nunca se commitea.
 - Clean code y principios SOLID; patrones de diseño cuando aporten (repository, service, inyección de dependencias). Sin sobreingeniería.
 - Services contienen la lógica; routers y handlers del bot son delgados (validan, delegan, responden).
 - No agregar dependencias ni documentación sin necesidad.
+- Los commits no llevan coautoría de Claude (configurado en `.claude/settings.json`).
 
 ## Decisiones de arquitectura
 
@@ -38,6 +44,8 @@ Copiar `.env.example` a `.env` y completar. El `.env` nunca se commitea.
 4. La BD es la fuente de verdad; el vault de Obsidian (una carpeta por proyecto) es una exportación.
 5. El bot corre en el mismo proceso que FastAPI y llama a `services/`, no a HTTP.
 6. Estados en inglés en BD y API (`idea|active|paused|done`); la traducción al español vive en UI y bot.
+
+7. Todo corre local: Docker Compose (backend + frontend), SQLite en volumen `/data`, vault de Obsidian como bind mount en `/vault`, bot con long polling (sin webhooks ni URL pública). El desarrollo diario es nativo (`uvicorn --reload`, `pnpm dev`). Obsidian es solo una carpeta de Markdown: el export no requiere tenerlo instalado.
 
 ## Regla de sesión
 
