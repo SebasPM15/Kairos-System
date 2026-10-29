@@ -8,6 +8,7 @@ from app.db import Base
 from app.models.base import UTCDateTime, utcnow
 
 if TYPE_CHECKING:
+    from app.models.idea import Idea
     from app.models.project import Project
 
 
@@ -20,5 +21,8 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
 
     projects: Mapped[list["Project"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan", passive_deletes=True
+    )
+    ideas: Mapped[list["Idea"]] = relationship(
         back_populates="user", cascade="all, delete-orphan", passive_deletes=True
     )

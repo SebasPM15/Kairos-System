@@ -9,15 +9,19 @@ from app.models.base import UTCDateTime, utcnow
 
 if TYPE_CHECKING:
     from app.models.project import Project
+    from app.models.user import User
 
 
 class Idea(Base):
     __tablename__ = "ideas"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    # Owner survives project deletion, so inbox ideas stay scoped to a user
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     # NULL means the idea sits in the inbox
     project_id: Mapped[int | None] = mapped_column(ForeignKey("projects.id", ondelete="SET NULL"))
     content: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
 
+    user: Mapped["User"] = relationship(back_populates="ideas")
     project: Mapped["Project | None"] = relationship(back_populates="ideas")
