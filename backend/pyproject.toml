@@ -1,0 +1,19 @@
+[project]
+name = "kairos-backend"
+version = "0.1.0"
+description = "Kairos: personal project tracking backend"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "sqlalchemy",
+    "alembic",
+    "python-telegram-bot",
+    "pydantic-settings",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "httpx"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
