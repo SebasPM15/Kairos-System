@@ -1,11 +1,12 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { AlertTriangle, ArrowUpRight, Check, ChevronDown, CirclePlus, Moon, Plus, Search, Sun, X } from 'lucide-react'
+import { AlertTriangle, ArrowUpRight, Check, ChevronDown, Moon, Plus, Search, Sun, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PROJECT_STATUSES, type Milestone, type Project, type ProjectStatus } from '@/lib/types'
 import { errorMessage, statusLabel } from '@/lib/labels'
 import * as api from '@/lib/api'
+import { ProjectCard } from '@/components/projects/project-card'
 import { StatusBadge } from '@/components/projects/status-badge'
 
 const filterLabels: [string, string][] = [['all', 'Todos'], ['active', 'Activos'], ['paused', 'Pausa'], ['idea', 'Ideas'], ['done', 'Terminados']]
@@ -15,18 +16,6 @@ function LoadError({ message, onRetry }: { message: string; onRetry: () => void 
 function EmptyProjects() { return <div className="state-panel"><h3>Aún no tienes proyectos</h3><p>Crea el primero desde el bot de Telegram con /proyecto &lt;nombre&gt;.</p></div> }
 function ProjectsSkeleton() { return <div className="project-grid" aria-busy="true" aria-label="Cargando proyectos">{[0, 1, 2].map((i) => <div key={i} className="project-card skeleton" />)}</div> }
 
-function ProgressBar({ progress }: { progress: number }) { return <div className="progress-wrap"><div className="progress-track"><div className="progress-value" style={{ width: `${progress}%` }} /></div><span>{progress}%</span></div> }
-function daysTone(days: number) { return days < 7 ? 'fresh' : days <= 14 ? 'warm' : 'stale' }
-
-function ProjectCard({ project, onOpen }: { project: Project; onOpen: () => void }) {
-  const days = project.days_since_activity
-  return <button className="project-card" onClick={onOpen} aria-label={`Abrir ${project.name}`}>
-    <div className="card-top"><div><h3>{project.name}</h3><p>{project.description}</p></div><StatusBadge status={project.status} /></div>
-    <div className="progress-label"><span>Progreso</span><span>{project.milestones_done}/{project.milestones_total} hitos</span></div><ProgressBar progress={project.progress} />
-    <div className={`touched ${daysTone(days)}`}>{days > 30 && project.status === 'active' ? <AlertTriangle data-icon="inline-start" /> : null}<span>{days} días sin tocar</span>{days > 30 && project.status === 'active' ? <em>Proyecto abandonado</em> : null}</div>
-    <div className={`next-action ${!project.next_action ? 'empty-action' : ''}`}><span>{project.next_action ?? 'Sin próxima acción definida'}</span>{!project.next_action ? <CirclePlus data-icon="inline-end" /> : <ArrowUpRight data-icon="inline-end" />}</div>
-  </button>
-}
 
 function ProjectDrawer({ project, onClose, onUpdate, onError }: { project: Project; onClose: () => void; onUpdate: (project: Project) => void; onError: (error: unknown) => void }) {
   const [tab, setTab] = useState<'detalles' | 'ideas' | 'decisiones'>('detalles'); const [action, setAction] = useState(project.next_action ?? ''); const [milestones, setMilestones] = useState<Milestone[] | null>(null)
