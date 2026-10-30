@@ -1,27 +1,11 @@
-import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Enfoque — Proyectos personales',
-  description: 'Dashboard personal para avanzar tus proyectos con foco.',
-  generator: 'v0.app',
+  title: 'Kairos — Seguimiento de proyectos',
+  description: 'Registra ideas y decisiones, mide el avance real y no abandones tus proyectos.',
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+    icon: '/icon.svg',
   },
 }
 
@@ -42,7 +26,6 @@ export default function RootLayout({
     <html lang="es" className="dark">
       <body className="antialiased">
         {children}
-        {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
   )
