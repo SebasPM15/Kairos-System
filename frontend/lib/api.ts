@@ -1,19 +1,107 @@
-import type { Project, ProjectStatus } from './types'
+import type {
+  BotCommand,
+  Decision,
+  DecisionCreate,
+  ExportSummary,
+  Idea,
+  IdeaCreate,
+  Milestone,
+  MilestoneUpdate,
+  Project,
+  ProjectCreate,
+  ProjectUpdate,
+} from './types'
 
-const daysAgo = (days: number) => new Date(Date.now() - days * 86400000).toISOString()
+const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/$/, '')
 
-let projects: Project[] = [
-  { id: 'nova-fin', name: 'Nova Fin', description: 'Panel financiero personal para entender mis hábitos de dinero.', status: 'activo', lastTouchedAt: daysAgo(2), nextAction: 'Definir el modelo de categorías', milestones: [{ id: 'n1', title: 'Diseñar dashboard', done: true }, { id: 'n2', title: 'Conectar movimientos', done: true }, { id: 'n3', title: 'Definir categorías', done: false }, { id: 'n4', title: 'Probar con datos reales', done: false }], ideasCount: 6, decisionsCount: 3 },
-  { id: 'trading-ai', name: 'Trading AI', description: 'Asistente para revisar setups y documentar operaciones.', status: 'activo', lastTouchedAt: daysAgo(9), nextAction: 'Escribir el prompt de análisis', milestones: [{ id: 't1', title: 'Investigar fuentes', done: true }, { id: 't2', title: 'Crear prompt base', done: true }, { id: 't3', title: 'Probar 10 setups', done: false }, { id: 't4', title: 'Añadir historial', done: false }, { id: 't5', title: 'Publicar beta', done: false }], ideasCount: 12, decisionsCount: 5 },
-  { id: 'telegram', name: 'Asistente Telegram', description: 'Bot para capturar ideas rápidas desde el móvil.', status: 'activo', lastTouchedAt: daysAgo(38), nextAction: null, milestones: [{ id: 'a1', title: 'Crear bot', done: true }, { id: 'a2', title: 'Guardar mensajes', done: true }, { id: 'a3', title: 'Añadir comandos', done: true }, { id: 'a4', title: 'Desplegar', done: false }], ideasCount: 4, decisionsCount: 2 },
-  { id: 'horarios', name: 'Sistema de Horarios', description: 'Organizador semanal para reducir el cambio de contexto.', status: 'pausa', lastTouchedAt: daysAgo(16), nextAction: 'Revisar el flujo de creación', milestones: [{ id: 'h1', title: 'Definir reglas', done: true }, { id: 'h2', title: 'Construir calendario', done: false }, { id: 'h3', title: 'Añadir recordatorios', done: false }], ideasCount: 8, decisionsCount: 1 },
-  { id: 'iot', name: 'Cuarto Inteligente IoT', description: 'Automatizaciones pequeñas para trabajar mejor en casa.', status: 'pausa', lastTouchedAt: daysAgo(45), nextAction: null, milestones: [{ id: 'i1', title: 'Elegir sensores', done: true }, { id: 'i2', title: 'Configurar hub', done: false }, { id: 'i3', title: 'Automatizar luces', done: false }], ideasCount: 9, decisionsCount: 4 },
-  { id: 'barberias', name: 'SaaS para barberías', description: 'Reservas y recordatorios para pequeños negocios.', status: 'idea', lastTouchedAt: daysAgo(21), nextAction: 'Hablar con una barbería', milestones: [{ id: 'b1', title: 'Validar problema', done: false }, { id: 'b2', title: 'Diseñar propuesta', done: false }, { id: 'b3', title: 'Crear prototipo', done: false }], ideasCount: 15, decisionsCount: 0 },
-  { id: 'freelance', name: 'Landing freelance', description: 'Página de servicios para captar mejores proyectos.', status: 'terminado', lastTouchedAt: daysAgo(4), nextAction: null, milestones: [{ id: 'f1', title: 'Escribir copy', done: true }, { id: 'f2', title: 'Diseñar página', done: true }, { id: 'f3', title: 'Publicar', done: true }], ideasCount: 2, decisionsCount: 3 },
-]
+export class ApiError extends Error {
+  constructor(
+    // 0 when the request never reached the server
+    readonly status: number,
+    // FastAPI's `detail`: a string, or a list of validation errors on 422
+    readonly detail: unknown,
+  ) {
+    super(typeof detail === 'string' ? detail : `API error ${status}`)
+    this.name = 'ApiError'
+  }
 
-export async function getProjects() { return structuredClone(projects) }
-export async function getProject(id: string) { return structuredClone(projects.find((project) => project.id === id)!) }
-export async function toggleMilestone(projectId: string, milestoneId: string) { projects = projects.map((project) => project.id === projectId ? { ...project, lastTouchedAt: new Date().toISOString(), milestones: project.milestones.map((milestone) => milestone.id === milestoneId ? { ...milestone, done: !milestone.done } : milestone) } : project); return getProject(projectId) }
-export async function setStatus(projectId: string, status: ProjectStatus) { projects = projects.map((project) => project.id === projectId ? { ...project, status } : project); return getProject(projectId) }
-export async function setNextAction(projectId: string, text: string) { projects = projects.map((project) => project.id === projectId ? { ...project, nextAction: text.trim() || null } : project); return getProject(projectId) }
+  get isNetworkError() {
+    return this.status === 0
+  }
+
+  // Active-project limit reached
+  get isActiveLimit() {
+    return this.status === 409
+  }
+
+  // Validation failure, e.g. activating without a next action
+  get isValidation() {
+    return this.status === 422
+  }
+}
+
+async function request<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+  let response: Response
+  try {
+    response = await fetch(`${BASE_URL}${path}`, {
+      method: init.method ?? 'GET',
+      headers: init.body === undefined ? undefined : { 'Content-Type': 'application/json' },
+      body: init.body === undefined ? undefined : JSON.stringify(init.body),
+      cache: 'no-store',
+    })
+  } catch {
+    throw new ApiError(0, 'Network error')
+  }
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null)
+    throw new ApiError(response.status, payload?.detail ?? response.statusText)
+  }
+  if (response.status === 204) return undefined as T
+  return response.json() as Promise<T>
+}
+
+export const projects = {
+  list: () => request<Project[]>('/projects'),
+  get: (id: number) => request<Project>(`/projects/${id}`),
+  create: (data: ProjectCreate) => request<Project>('/projects', { method: 'POST', body: data }),
+  update: (id: number, data: ProjectUpdate) =>
+    request<Project>(`/projects/${id}`, { method: 'PATCH', body: data }),
+  remove: (id: number) => request<void>(`/projects/${id}`, { method: 'DELETE' }),
+}
+
+export const milestones = {
+  list: (projectId: number) => request<Milestone[]>(`/projects/${projectId}/milestones`),
+  create: (projectId: number, title: string) =>
+    request<Milestone>(`/projects/${projectId}/milestones`, { method: 'POST', body: { title } }),
+  update: (id: number, data: MilestoneUpdate) =>
+    request<Milestone>(`/milestones/${id}`, { method: 'PATCH', body: data }),
+  remove: (id: number) => request<void>(`/milestones/${id}`, { method: 'DELETE' }),
+}
+
+export const ideas = {
+  inbox: () => request<Idea[]>('/ideas'),
+  listByProject: (projectId: number) => request<Idea[]>(`/projects/${projectId}/ideas`),
+  create: (data: IdeaCreate) => request<Idea>('/ideas', { method: 'POST', body: data }),
+  createInProject: (projectId: number, content: string) =>
+    request<Idea>(`/projects/${projectId}/ideas`, { method: 'POST', body: { content } }),
+  // projectId null returns the idea to the inbox
+  assign: (id: number, projectId: number | null) =>
+    request<Idea>(`/ideas/${id}`, { method: 'PATCH', body: { project_id: projectId } }),
+  remove: (id: number) => request<void>(`/ideas/${id}`, { method: 'DELETE' }),
+}
+
+export const decisions = {
+  listByProject: (projectId: number) => request<Decision[]>(`/projects/${projectId}/decisions`),
+  create: (projectId: number, data: DecisionCreate) =>
+    request<Decision>(`/projects/${projectId}/decisions`, { method: 'POST', body: data }),
+  remove: (id: number) => request<void>(`/decisions/${id}`, { method: 'DELETE' }),
+}
+
+export const bot = {
+  commands: () => request<BotCommand[]>('/bot/commands'),
+}
+
+export const vault = {
+  export: () => request<ExportSummary>('/export', { method: 'POST' }),
+}
