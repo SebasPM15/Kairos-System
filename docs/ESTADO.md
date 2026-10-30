@@ -133,6 +133,8 @@ Commits: `e916c15` (tokens de tema), `fac4e12` y `74d488b` (catálogo: `feat(api
 ## Entorno de demo
 Base y vault aparte para revisar el dashboard a mano; nunca tocan `kairos.db` ni tu vault. `backend/scripts/seed_demo.py` carga los datos con los services (límite de activos, próxima acción y porcentaje calculado se respetan) y se niega a correr si la base no es de demo (el nombre del archivo debe incluir `demo`), si no hay tablas o si ya hay datos sin `--reset`. `--reset` borra solo los proyectos e ideas del usuario actual de esa base. La base de demo es `backend/demo.db` (ya ignorada por git); el vault de demo va en la carpeta temporal.
 
+**Atajo** (desde la raíz): `.\scripts\demo.ps1` en PowerShell o `./scripts/demo.sh` en bash hacen todo lo de abajo (variables, `alembic upgrade head`, seed si la base está vacía y `uvicorn`). Opciones: `-Reset` / `--reset` para volver a sembrar y `-Port` (PowerShell) o un número como argumento (bash). Después, en otra terminal, `pnpm dev` en `frontend/`. Lo manual:
+
 **PowerShell** (terminal 1, backend, desde `backend/`):
 ```powershell
 .venv\Scripts\Activate.ps1
