@@ -70,6 +70,27 @@ _Última actualización: 2026-10-30_
 - Export: el frontmatter guarda `status` en inglés (valor estable de BD) y el cuerpo lo muestra en español. `last_activity` en ISO UTC con segundos. Los hitos se ordenan por `position`; ideas y decisiones por ID (cronológico). Los títulos de hitos/proyectos se colapsan a una línea; las ideas multilínea se indentan bajo su viñeta. Los tests de symlink crean junctions en Windows si no hay privilegio de symlink.
 - En la BD de Docker quedaron un proyecto "Kairos" (id 1) y una idea suelta de sesiones anteriores; no se tocaron.
 
+## Hito 10 · Sesión 2: plan de iteraciones
+Cada iteración = un commit pequeño y convencional, sin coautoría de Claude, con backend y frontend arrancables. Al terminar cada una: verificación mínima (lint/typecheck, y tests si se tocó backend) y reporte de 2-3 líneas. Si una iteración crece, se divide en dos commits. Fuera de alcance (sesión 3): bandeja de ideas global, botón de export con su resumen, pestaña Bot.
+
+1. [x] Backend: `GET /config` -> `{"max_active_projects": N}` desde settings. Router delgado, test incluido, sin tocar la lógica del límite. (`e77da69` feat(api): GET /config exposes the active projects limit)
+2. [x] `lib/api.ts` y errores: añadir `getConfig()`. Ajustar `ApiError` para distinguir por la FORMA del `detail`: string = error de negocio, lista = validación Pydantic (mapeable a errores por campo). `errorMessage()` debe depender de status + endpoint, con el texto del `detail` solo como respaldo. (`158a24b` feat(frontend): typed API errors by detail shape and getConfig)
+3. [ ] Extraer de `project-dashboard.tsx` la lista y la tarjeta de proyecto a `components/projects/`. Comportamiento idéntico, sin librería de estado nueva.
+4. [ ] Tarjeta: estado con `lib/labels.ts`, porcentaje tal cual del backend (no recalcular), próxima acción visible, umbral de "abandonado" como constante nombrada en un solo lugar. Contador "N / máx" activos usando `/config`.
+5. [ ] Sustituir skeleton y aviso con CSS propio por los componentes shadcn skeleton y alert si no añaden dependencias (si hace falta alguna, justificarla antes de instalar). Comentar el motivo de `unrs-resolver: false` donde esté.
+6. [ ] Drawer del proyecto con secciones de hitos, ideas y decisiones: lectura, y marcar hito como hecho (el porcentaje debe refrescarse desde el backend).
+7. [ ] Formularios de alta: crear proyecto y crear hito. Validación mínima en cliente; la verdad la tiene el backend.
+8. [ ] Registrar decisión (el endpoint `POST /projects/{id}/decisions` existe) y cambios de estado desde la UI (activar, pausar, terminar).
+9. [ ] Errores en su sitio: 409 junto al control que lo causó, con el máximo real de `/config`; 422 de negocio junto al campo de próxima acción; 422 de validación mapeado por campo. El aviso global queda solo para errores sin contexto (red, 5xx).
+10. [ ] Verificación y cierre: `pnpm lint`, `typecheck` y `build` en verde; suite completa del backend (323 + nuevos). Prueba manual del flujo: crear proyecto, añadir hitos, activar con y sin próxima acción (422), superar el límite (409), marcar hito hecho y ver cambiar el porcentaje, y backend apagado. Si se puede abrir navegador, hacerlo y anotar qué se probó en navegador y qué solo a nivel API. Después, actualizar este archivo (y ROADMAP si cambia algo) en un commit propio. Entregar resumen para el chat de revisión: commits, archivos clave, decisiones, dependencias, resultado de lint/build/tests y pendientes para la sesión 3.
+
+### Decisiones y avisos de la sesión
+- `pnpm-workspace.yaml` tiene `allowBuilds: unrs-resolver: false` porque pnpm pedía aprobar el script de build de `unrs-resolver` (dependencia transitiva de `eslint-config-next`); usa binarios precompilados y no necesita compilar. En la iteración 5 hay que dejar un comentario con este motivo en ese archivo.
+- Las pruebas manuales usan siempre BD y vault temporales: `DATABASE_URL` y `OBSIDIAN_VAULT_PATH` apuntan a la carpeta temporal, y `TELEGRAM_BOT_TOKEN`/`TELEGRAM_ALLOWED_USER_ID` van vacíos. En la sesión 1 se sobrescribió la BD pero no el vault (Settings lee `.env`); no se llamó a `/export`, así que no se escribió nada.
+- `errorMessage(error, { maxActive })` se resuelve por `status + endpoint` (p. ej. `409 PATCH /projects/:id`); `fieldErrors(error)` mapea los issues de Pydantic por nombre de campo. El 409 de `/export` es otro conflicto (vault) y no se confunde con el límite de activos.
+- Duda abierta: la verificación visual en navegador no se hizo en la sesión 1; se intentará en la iteración 10.
+- Duda abierta: el umbral de "abandonado" (>30 días) vive en el cliente solo como presentación.
+
 ## Adaptaciones pendientes del frontend
 (hechas en la sesión 1: `lib/api.ts`, `lib/types.ts`, límite de activos por 409, estados de carga/error, limpieza de V0)
 4. Tabs Ideas/Decisiones vacías: faltan listas y alta (sesión 3). Hoy sin contadores: la API no los expone.
