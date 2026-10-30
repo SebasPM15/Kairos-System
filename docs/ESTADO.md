@@ -1,6 +1,6 @@
 # Estado
 
-_Última actualización: 2026-10-29_
+_Última actualización: 2026-10-29 (endurecimiento del hito 10)_
 
 ## Hecho
 - Esqueleto del backend (carpetas, `__init__.py`, `pyproject.toml` mínimo) y `.env.example`.
@@ -118,7 +118,17 @@ Commits: `08f4ea9` (etiqueta de estado), `5089f38` (`GET /ideas/all`), `ecb1c43`
 - La tabla del bot saca los argumentos de `syntax` quitando `/<name>` (el catálogo no tiene campo de argumentos).
 - Tema claro: `body` resolvía `--foreground` antes de `.light`, dejando texto casi blanco; se fijó `color` y fondo en `.dashboard`.
 - Verificación: `pnpm lint`, `typecheck`, `build` en verde; backend 331 pasan y 1 omitido (`test_symlinked_file_leaving_the_vault_is_rejected`: en Windows sin privilegio no se pueden crear symlinks de archivo; es intencional y los de carpeta usan junctions). Navegador (Chrome headless con CDP, backend y vault temporales, `MAX_ACTIVE_PROJECTS=1`): **visto en pantalla** alta de proyecto, hito, decisión e idea en el drawer (con sus errores de campo vacío), bandeja con filtro, asignar/desasignar, diálogo de borrado (cancelar y confirmar), export (5 archivos escritos; segundo export 0 escritos / 5 sin cambios; carpeta huérfana informada; `Notas/keep.md`, `Kairos/huerfana/x.md` y un archivo manual en `Kairos/` siguen intactos), tabla del bot (11 comandos), tema claro y errores de conexión (export, Bot, Ideas, "Reintentar") con el backend apagado. **No probado**: skeleton de carga ni el 409 de `/export` sin vault configurado (el mensaje existe en `lib/labels.ts`; el 409 ya lo cubren los tests del backend).
-- Pendiente visual: los botones `default` de shadcn (p. ej. "Añadir", "Exportar ahora") se ven sin fondo porque los tokens `--primary` de shadcn no están definidos en el tema propio de V0.
+- (Resuelto en el endurecimiento) Los botones de shadcn se veían sin fondo por falta de tokens.
+
+### Endurecimiento del hito 10 (antes de v0.2)
+Commits: `e916c15` (tokens de tema), `fac4e12` y `74d488b` (catálogo: `feat(api)` + `refactor(frontend)`), `ae503aa` (gitignore), `95888cc` (documentar `NEXT_PUBLIC_API_URL`).
+- Tema: `globals.css` no tenía `@theme`, así que `bg-primary`, `bg-muted`, etc. no generaban clases. Se añadió un `@theme inline` que mapea los nombres de shadcn a las variables de V0 (`--soft`, `--line`, `--muted`, `--accent`) y se definieron `--primary`, `--primary-foreground` y `--destructive` en oscuro y claro. Primario: lima sobre texto oscuro en oscuro; oscuro sobre texto claro en claro.
+- Catálogo del bot: `CommandInfo` tiene `name`, `args` y `description`; `syntax` es un campo calculado (`/<name> <args>`), así que no hay dos copias que desincronizar. `GET /bot/commands` devuelve los cuatro campos y la pestaña Bot usa `args`. 333 tests pasan, 1 omitido (symlink de archivo, intencional).
+- Docker: `docker compose up -d --build` funciona con BD (volumen) y vault temporales y bot sin token. `NEXT_PUBLIC_API_URL` ya se pasaba como build arg (compose -> Dockerfile); se comprobó con un valor distinto del por defecto (`http://127.0.0.1:8000`): quedó incrustado en el JS compilado y el navegador llamó a ese origen. Solo hizo falta documentarlo (`.env.example`, `architecture.md`): cambiarla exige reconstruir.
+- `next-env.d.ts` dejó de versionarse y `AGENTS.md` (lo genera `next dev`) se ignora, ambos en `frontend/.gitignore`; tras `pnpm build` y `pnpm dev` el árbol queda limpio.
+- AlertDialog: con clic real, el foco entra al diálogo (en "Cancelar"), Escape lo cierra y el foco vuelve al botón "Borrar" que lo abrió; igual al cancelar. (Con `element.click()` por script el foco no vuelve porque el botón nunca lo tuvo.)
+- Verificación: lint, typecheck y build en verde. Navegador (Chrome headless, contra el stack de Docker con datos temporales): botones "Añadir", "Exportar ahora" y "Borrar idea" con fondo y texto calculados en ambos temas (primario lima/oscuro, destructivo rojo translúcido), tabla del bot con la columna de argumentos. **Solo por código/API**: el resto de botones de shadcn (secundario, link) no se vieron.
+- Nota: `docker compose` lee `env_file: .env`; para probar sin el `.env` real se usó un override con `env_file: !reset []`, `--env-file` temporal y proyecto `kairos-verify`, eliminado al terminar (contenedores, volumen e imágenes).
 
 ## Adaptaciones pendientes del frontend
 (hechas en la sesión 1: `lib/api.ts`, `lib/types.ts`, límite de activos por 409, estados de carga/error, limpieza de V0)
