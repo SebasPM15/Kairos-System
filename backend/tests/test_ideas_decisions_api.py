@@ -223,3 +223,44 @@ def test_deleting_project_deletes_decisions(client, project):
     client.delete(f"/projects/{project['id']}")
 
     assert client.delete(f"/decisions/{decision['id']}").status_code == 404
+
+
+def test_list_all_ideas_newest_first_with_and_without_project(client, project):
+    first = post_idea(client, content="first")
+    second = post_idea(client, content="second", project_id=project["id"])
+    third = post_idea(client, content="third")
+
+    response = client.get("/ideas/all")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert [i["id"] for i in body] == [third["id"], second["id"], first["id"]]
+    assert [i["project_id"] for i in body] == [None, project["id"], None]
+
+
+def test_list_all_ideas_orders_by_created_at(client, session, project):
+    from datetime import timedelta
+
+    from app.models import Idea
+
+    old = post_idea(client, content="old")
+    new = post_idea(client, content="new")
+    # An older timestamp on the later id proves created_at, not id, drives the order
+    session.get(Idea, new["id"]).created_at = session.get(Idea, old["id"]).created_at - timedelta(days=1)
+    session.commit()
+
+    assert [i["id"] for i in client.get("/ideas/all").json()] == [old["id"], new["id"]]
+
+
+def test_list_all_ideas_hides_other_users_and_is_empty_by_default(client, users):
+    assert client.get("/ideas/all").json() == []
+    client.as_user(users[1])
+    post_idea(client, content="theirs")
+    client.as_user(users[0])
+
+    assert client.get("/ideas/all").json() == []
+
+
+def test_ideas_all_does_not_shadow_idea_routes(client):
+    assert client.patch("/ideas/999", json={"content": "x"}).status_code == 404
+    assert client.delete("/ideas/999").status_code == 404

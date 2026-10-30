@@ -31,6 +31,16 @@ class IdeaRepository:
             )
         )
 
+    def list_all(self, user_id: int) -> list[Idea]:
+        # id breaks ties between ideas created within the same timestamp
+        return list(
+            self._session.scalars(
+                select(Idea)
+                .where(Idea.user_id == user_id)
+                .order_by(Idea.created_at.desc(), Idea.id.desc())
+            )
+        )
+
     def add(self, idea: Idea) -> None:
         self._session.add(idea)
         self._session.flush()

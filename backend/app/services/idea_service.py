@@ -37,6 +37,9 @@ class IdeaService:
     def list_inbox(self) -> list[Idea]:
         return self._repo.list_inbox(self._user_id)
 
+    def list_all(self) -> list[Idea]:
+        return self._repo.list_all(self._user_id)
+
     def update(self, idea_id: int, data: IdeaUpdate) -> Idea:
         idea = self._get(idea_id)
         # model_fields_set tells an omitted project_id apart from an explicit null (back to inbox)

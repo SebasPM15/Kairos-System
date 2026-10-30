@@ -54,6 +54,12 @@ def list_inbox(service: IdeaService = Depends(get_idea_service)):
     return service.list_inbox()
 
 
+# Declared before any /ideas/{id} route so "all" is never parsed as an id
+@router.get("/ideas/all", response_model=list[IdeaRead])
+def list_all_ideas(service: IdeaService = Depends(get_idea_service)):
+    return service.list_all()
+
+
 @router.post("/ideas", response_model=IdeaRead, status_code=status.HTTP_201_CREATED)
 def create_idea(data: IdeaCreate, service: IdeaService = Depends(get_idea_service)):
     with _http_errors():

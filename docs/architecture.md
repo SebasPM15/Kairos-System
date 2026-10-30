@@ -133,6 +133,7 @@ Todo en español; cada archivo lleva al inicio el aviso "Generado por Kairos des
 | PATCH, DELETE | /milestones/{id} | editar o marcar hecho / borrar |
 | GET, POST | /projects/{id}/ideas | listar / crear |
 | GET, POST | /ideas | bandeja de entrada (sin proyecto) |
+| GET | /ideas/all | todas las ideas del usuario (con y sin proyecto), las más recientes primero |
 | PATCH, DELETE | /ideas/{id} | asignar a proyecto / borrar |
 | GET, POST | /projects/{id}/decisions | listar / crear |
 | GET | /bot/commands | catálogo de comandos del bot (`name`, `syntax`, `description`); estático, no llama a Telegram |
