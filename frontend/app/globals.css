@@ -5,12 +5,13 @@
 @custom-variant dark (&:is(.dark *));
 
 :root { --background: #0d0f12; --foreground: #f1f3f5; --card: #15181d; --muted: #8e959f; --line: #272c33; --accent: #d8f56a; --soft: #1c2128; --warm: #f0b765; --danger: #ed817d; --blue: #9ec5ff; --radius: 12px; color-scheme: dark; }
+.light.dashboard { background: var(--background); }
 .light { --background: #f5f6f2; --foreground: #1b201d; --card: #ffffff; --muted: #68716b; --line: #dce2db; --soft: #edf1eb; color-scheme: light; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--background); color: var(--foreground); font-family: Arial, Helvetica, sans-serif; }
 button, input, select { font: inherit; }
 button { cursor: pointer; }
-.dashboard { min-height: 100vh; background: radial-gradient(circle at 75% -10%, #202a29 0, transparent 32rem), var(--background); }
+.dashboard { color: var(--foreground); min-height: 100vh; background: radial-gradient(circle at 75% -10%, #202a29 0, transparent 32rem), var(--background); }
 .header { height: 76px; max-width: 1180px; margin: auto; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
 .brand { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 700; letter-spacing: -.03em; }.brand-mark { color: var(--accent); font-size: 22px; line-height: 1; }.header-actions { display: flex; align-items: center; gap: 16px; }.counter { color: var(--accent); font-size: 13px; font-weight: 700; }.counter.over { color: var(--danger); }
 .container { max-width: 1180px; margin: auto; padding: 72px 28px 100px; }.intro { display: flex; justify-content: space-between; align-items: end; gap: 40px; margin-bottom: 76px; }.eyebrow { color: var(--muted); text-transform: uppercase; letter-spacing: .14em; font-size: 10px; font-weight: 700; margin: 0 0 14px; }.intro h1 { font-size: clamp(42px, 6vw, 70px); line-height: .98; letter-spacing: -.07em; margin: 0; font-weight: 700; }.intro h1 span { color: var(--accent); }.lead { max-width: 440px; color: var(--muted); font-size: 15px; line-height: 1.6; margin: 22px 0 0; }.active-note { min-width: 250px; border: 1px solid var(--line); border-radius: var(--radius); padding: 15px 17px; display: flex; gap: 12px; align-items: flex-start; }.note-dot { width: 8px; height: 8px; margin-top: 4px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px #d8f56a22; }.active-note strong { font-size: 13px; }.active-note p { color: var(--muted); margin: 5px 0 0; font-size: 12px; }
