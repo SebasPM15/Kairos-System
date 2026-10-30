@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button'
 import { PROJECT_STATUSES, type Milestone, type Project, type ProjectStatus } from '@/lib/types'
 import { errorMessage, statusLabel } from '@/lib/labels'
 import * as api from '@/lib/api'
+import { StatusBadge } from '@/components/projects/status-badge'
 
-const statusTone: Record<ProjectStatus, string> = { active: 'status-active', paused: 'status-paused', idea: 'status-idea', done: 'status-done' }
 const filterLabels: [string, string][] = [['all', 'Todos'], ['active', 'Activos'], ['paused', 'Pausa'], ['idea', 'Ideas'], ['done', 'Terminados']]
 
 function Notice({ message, onDismiss }: { message: string; onDismiss: () => void }) { return <div className="notice" role="alert"><AlertTriangle /><span>{message}</span><button onClick={onDismiss} aria-label="Cerrar aviso"><X /></button></div> }
@@ -15,7 +15,6 @@ function LoadError({ message, onRetry }: { message: string; onRetry: () => void 
 function EmptyProjects() { return <div className="state-panel"><h3>Aún no tienes proyectos</h3><p>Crea el primero desde el bot de Telegram con /proyecto &lt;nombre&gt;.</p></div> }
 function ProjectsSkeleton() { return <div className="project-grid" aria-busy="true" aria-label="Cargando proyectos">{[0, 1, 2].map((i) => <div key={i} className="project-card skeleton" />)}</div> }
 
-function StatusBadge({ status }: { status: ProjectStatus }) { return <span className={`status-badge ${statusTone[status]}`}>{statusLabel[status]}</span> }
 function ProgressBar({ progress }: { progress: number }) { return <div className="progress-wrap"><div className="progress-track"><div className="progress-value" style={{ width: `${progress}%` }} /></div><span>{progress}%</span></div> }
 function daysTone(days: number) { return days < 7 ? 'fresh' : days <= 14 ? 'warm' : 'stale' }
 
