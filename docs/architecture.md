@@ -56,6 +56,7 @@ Reglas:
 ## Ejecución local
 
 - Docker Compose (backend + frontend): SQLite en volumen `/data`; vault de Obsidian como bind mount en `/vault` (`OBSIDIAN_VAULT_PATH=/vault` dentro del contenedor).
+- `NEXT_PUBLIC_API_URL` (la URL del backend que llama el navegador) la incrusta Next.js al compilar, no al arrancar: en Docker se pasa como build arg (`docker-compose.yml` -> `frontend/Dockerfile`, por defecto `http://localhost:8000`) y para cambiarla hay que reconstruir (`docker compose up -d --build`). El origen del frontend debe estar en `CORS_ORIGINS`.
 - Bot con long polling: sin webhooks ni URL pública.
 - Desarrollo diario nativo (`uvicorn --reload`, `pnpm dev`); Docker sirve para ejecutar el sistema completo.
 - Obsidian es solo una carpeta de Markdown: el export funciona sin tener Obsidian instalado.
