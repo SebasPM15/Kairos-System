@@ -90,6 +90,8 @@ export const milestones = {
 
 export const ideas = {
   inbox: () => request<Idea[]>('/ideas'),
+  // Every idea of the user, newest first; project_id null means inbox
+  all: () => request<Idea[]>('/ideas/all'),
   listByProject: (projectId: number) => request<Idea[]>(`/projects/${projectId}/ideas`),
   create: (data: IdeaCreate) => request<Idea>('/ideas', { method: 'POST', body: data }),
   createInProject: (projectId: number, content: string) =>
