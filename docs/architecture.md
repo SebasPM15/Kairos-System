@@ -136,6 +136,7 @@ Todo en español; cada archivo lleva al inicio el aviso "Generado por Kairos des
 | PATCH, DELETE | /ideas/{id} | asignar a proyecto / borrar |
 | GET, POST | /projects/{id}/decisions | listar / crear |
 | GET | /bot/commands | catálogo de comandos del bot (`name`, `syntax`, `description`); estático, no llama a Telegram |
+| GET | /config | configuración pública para la UI: `max_active_projects` |
 | POST | /export | exportar al vault de Obsidian; devuelve el resumen (proyectos, archivos escritos, sin cambios, carpetas huérfanas) |
 
 Errores: 404 no existe, 409 límite de activos o vault no configurado / ruta fuera del vault, 422 validación (p. ej. sin próxima acción).
