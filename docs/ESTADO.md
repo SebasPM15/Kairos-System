@@ -1,6 +1,6 @@
 # Estado
 
-_Última actualización: 2026-10-29_
+_Última actualización: 2026-10-30_
 
 ## Hecho
 - Esqueleto del backend (carpetas, `__init__.py`, `pyproject.toml` mínimo) y `.env.example`.
@@ -18,6 +18,7 @@ _Última actualización: 2026-10-29_
 - Pulido del bot: `/start` y `/ayuda` (lista de comandos), `/pausa <slug>` y `/terminar <slug>` (vía `ProjectService.update`), y aviso en `/hecho` al llegar al 100 % (solo sugerencia, no cambia el estado). 231 tests pasan, sin red. Sigue sin probarse contra Telegram real.
 - Hito 9: export al vault de Obsidian. `app/exporters/` (`markdown.py` puro, `vault.py` con `VaultWriter`/`FileSystemVaultWriter`, `project_exporter.py`), `POST /export` y `/exportar` en el bot; `VaultNotConfigured` y `UnsafeVaultPath` mapeados a 409 y a mensajes del bot. 316 tests pasan (1 se omite si no hay symlinks de archivo; en Windows los de carpeta usan junctions). Verificado en Docker con el bind mount `vault-dev`: el usuario no root (uid 10001) escribe, el segundo export no escribe nada, las carpetas huérfanas se informan y no se tocan; datos de prueba y `vault-dev/Kairos` eliminados.
 - Catálogo único de comandos del bot: `app/bot/catalog.py` alimenta `/ayuda` y `/start`, el menú de Telegram (`set_my_commands` al arrancar; si falla solo se registra el nombre de la excepción) y `GET /bot/commands`. 323 tests pasan, sin red (nuevos en `test_bot_catalog.py`); ningún test existente cambió salvo que el bot falso de `test_bot_lifecycle.py` ahora define `set_my_commands`. Menú **no probado contra Telegram real**.
+- Hito 10, sesión 1 (dashboard conectado, limpieza): `frontend/lib/types.ts` (tipos en inglés iguales a la API), `lib/labels.ts` (único mapa de estados al español y `errorMessage`), `lib/api.ts` (fetch nativo, `NEXT_PUBLIC_API_URL`, funciones por recurso y `ApiError` con `status`/`detail`; 0 = sin conexión, 409 = límite de activos, 422 = validación). El dashboard lista proyectos reales con skeleton, error con "Reintentar" y estado vacío; los hitos se cargan al abrir el detalle; el progreso y los días sin tocar vienen del backend. Sin `window.confirm`: el 409/422 se muestra como aviso con el mensaje en español. Quitados `@vercel/analytics`, `ignoreBuildErrors`, `generator: v0.app`, placeholders e iconos de V0; marca Kairos. `pnpm lint` (ESLint + `eslint-config-next`), `pnpm typecheck` y `pnpm build` en verde. CORS ya existía (`cors_origins`); añadido `tests/test_cors.py` y `CORS_ORIGINS` en `.env.example`. 326 tests pasan, sin red. Verificado a mano con backend temporal (`MAX_ACTIVE_PROJECTS=1`): 422 al activar sin acción, 409 al superar el límite y preflight CORS desde `localhost:3000`; el HTML servido por Next incluye el skeleton. **Los estados de error y el aviso del 409 no se vieron en un navegador** (solo la API y el SSR).
 - Documentos base: CLAUDE.md, ROADMAP, architecture.
 
 - `.claude/settings.json` sin coautoría de Claude; commits locales reescritos para quitarla (aún no estaban en el remoto).
@@ -25,8 +26,8 @@ _Última actualización: 2026-10-29_
 ## Sigue
 - Probar el bot contra Telegram real (token y `TELEGRAM_ALLOWED_USER_ID` en `.env`).
 - Hito 10 de v0.1: dashboard conectado a la API (ver "Adaptaciones pendientes del frontend"), en tres sesiones:
-  1. Cliente API y limpieza (adaptaciones 1, 2 y 6).
-  2. Proyectos (crear, hitos, límite de activos por 409, estados de carga y error; adaptaciones 3, 5 y 7).
+  1. ~~Cliente API y limpieza~~ (hecho).
+  2. Proyectos (crear proyecto e hitos, manejo fino del 409/422, dividir `project-dashboard.tsx`; adaptaciones 5 y 7).
   3. Bandeja, export y pestaña "Bot" (ideas, decisiones, `POST /export` y los comandos desde `GET /bot/commands`; adaptación 4).
 - Probar `/exportar` y abrir el vault real en Obsidian (hasta ahora solo probado con `vault-dev`).
 
@@ -70,10 +71,9 @@ _Última actualización: 2026-10-29_
 - En la BD de Docker quedaron un proyecto "Kairos" (id 1) y una idea suelta de sesiones anteriores; no se tocaron.
 
 ## Adaptaciones pendientes del frontend
-1. `lib/api.ts`: cambiar mocks por `fetch` a `NEXT_PUBLIC_API_URL`; habilitar CORS en FastAPI.
-2. `lib/types.ts`: IDs numéricos, estados en inglés con etiquetas en español, `ideas`/`decisions` como listas; porcentaje y días sin tocar calculados por el backend.
-3. Límite de activos: hoy 3 fijo con `window.confirm`; debe ser rechazo del servidor (409) según config.
-4. Tabs Ideas/Decisiones vacías: faltan listas y alta.
-5. Faltan crear proyecto/hito, estados de carga y error.
-6. Quitar `@vercel/analytics`, `generator: 'v0.app'`, `ignoreBuildErrors`; marca “Enfoque” → “Kairos”; `name` del package.
-7. Dividir `project-dashboard.tsx` (un solo componente denso) en componentes pequeños.
+(hechas en la sesión 1: `lib/api.ts`, `lib/types.ts`, límite de activos por 409, estados de carga/error, limpieza de V0)
+4. Tabs Ideas/Decisiones vacías: faltan listas y alta (sesión 3). Hoy sin contadores: la API no los expone.
+5. Faltan crear proyecto y hito (sesión 2).
+7. Dividir `project-dashboard.tsx` (un solo componente denso) en componentes pequeños (sesión 2).
+- El límite de activos (`MAX_ACTIVE_PROJECTS`) no lo expone ningún endpoint: el contador del encabezado muestra "N activos" sin denominador. Decidir en la sesión 2 si se añade a la API.
+- Los umbrales de color de "días sin tocar" y "Proyecto abandonado" (>30 días) siguen en el cliente solo como presentación.
