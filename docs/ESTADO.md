@@ -1,6 +1,6 @@
 # Estado
 
-_Última actualización: 2026-10-30_
+_Última actualización: 2026-10-29_
 
 ## Hecho
 - Esqueleto del backend (carpetas, `__init__.py`, `pyproject.toml` mínimo) y `.env.example`.
@@ -19,16 +19,19 @@ _Última actualización: 2026-10-30_
 - Hito 9: export al vault de Obsidian. `app/exporters/` (`markdown.py` puro, `vault.py` con `VaultWriter`/`FileSystemVaultWriter`, `project_exporter.py`), `POST /export` y `/exportar` en el bot; `VaultNotConfigured` y `UnsafeVaultPath` mapeados a 409 y a mensajes del bot. 316 tests pasan (1 se omite si no hay symlinks de archivo; en Windows los de carpeta usan junctions). Verificado en Docker con el bind mount `vault-dev`: el usuario no root (uid 10001) escribe, el segundo export no escribe nada, las carpetas huérfanas se informan y no se tocan; datos de prueba y `vault-dev/Kairos` eliminados.
 - Catálogo único de comandos del bot: `app/bot/catalog.py` alimenta `/ayuda` y `/start`, el menú de Telegram (`set_my_commands` al arrancar; si falla solo se registra el nombre de la excepción) y `GET /bot/commands`. 323 tests pasan, sin red (nuevos en `test_bot_catalog.py`); ningún test existente cambió salvo que el bot falso de `test_bot_lifecycle.py` ahora define `set_my_commands`. Menú **no probado contra Telegram real**.
 - Hito 10, sesión 1 (dashboard conectado, limpieza): `frontend/lib/types.ts` (tipos en inglés iguales a la API), `lib/labels.ts` (único mapa de estados al español y `errorMessage`), `lib/api.ts` (fetch nativo, `NEXT_PUBLIC_API_URL`, funciones por recurso y `ApiError` con `status`/`detail`; 0 = sin conexión, 409 = límite de activos, 422 = validación). El dashboard lista proyectos reales con skeleton, error con "Reintentar" y estado vacío; los hitos se cargan al abrir el detalle; el progreso y los días sin tocar vienen del backend. Sin `window.confirm`: el 409/422 se muestra como aviso con el mensaje en español. Quitados `@vercel/analytics`, `ignoreBuildErrors`, `generator: v0.app`, placeholders e iconos de V0; marca Kairos. `pnpm lint` (ESLint + `eslint-config-next`), `pnpm typecheck` y `pnpm build` en verde. CORS ya existía (`cors_origins`); añadido `tests/test_cors.py` y `CORS_ORIGINS` en `.env.example`. 326 tests pasan, sin red. Verificado a mano con backend temporal (`MAX_ACTIVE_PROJECTS=1`): 422 al activar sin acción, 409 al superar el límite y preflight CORS desde `localhost:3000`; el HTML servido por Next incluye el skeleton. **Los estados de error y el aviso del 409 no se vieron en un navegador** (solo la API y el SSR).
+- Hito 10, sesión 3 (bandeja, export y pestaña Bot): `GET /ideas/all` (todas las ideas del usuario, `created_at` descendente; 331 tests pasan, 1 omitido a propósito). Frontend: navegación Proyectos / Ideas / Bot sin router ni librería de estado (`view` en `project-dashboard.tsx`); `components/ideas/` (vista global con filtro por proyecto o sin proyecto, alta en la bandeja, asignar/desasignar, borrar con `AlertDialog`), alta de ideas en el drawer, `components/export/export-panel.tsx` (resumen y errores en el panel) y `components/bot/bot-commands.tsx` (tabla desde `GET /bot/commands`, sin duplicar el catálogo). Cierre de la sesión 2: sin rastro del paquete `cn`; etiqueta de estado ya no se estira; formularios de alta probados en navegador. `pnpm lint`, `typecheck` y `build` en verde. **Hito 10 completo.**
 - Documentos base: CLAUDE.md, ROADMAP, architecture.
 
 - `.claude/settings.json` sin coautoría de Claude; commits locales reescritos para quitarla (aún no estaban en el remoto).
 
 ## Sigue
 - Probar el bot contra Telegram real (token y `TELEGRAM_ALLOWED_USER_ID` en `.env`).
-- Hito 10 de v0.1: dashboard conectado a la API (ver "Adaptaciones pendientes del frontend"), en tres sesiones:
+- ~~Hito 10 de v0.1: dashboard conectado a la API~~ (completo, tres sesiones):
+- Siguiente: v0.2, recordatorios y alertas de proyectos sin avance.
+- Detalles del hito 10:
   1. ~~Cliente API y limpieza~~ (hecho).
   2. ~~Proyectos~~ (hecho, ver "Cierre de la sesión 2").
-  3. Bandeja, export y pestaña "Bot" (ideas, decisiones, `POST /export` y los comandos desde `GET /bot/commands`; adaptación 4).
+  3. ~~Bandeja, export y pestaña "Bot"~~ (hecho, ver "Cierre de la sesión 3").
 - Probar `/exportar` y abrir el vault real en Obsidian (hasta ahora solo probado con `vault-dev`).
 
 ## Bloqueos
@@ -104,13 +107,21 @@ Commits: `d8efbf2` (`isAbandoned`, constantes de próxima acción, contador "N /
 - Cambio de estado: sigue siendo el `select` del drawer (activar/pausar/terminar); no se añadieron botones.
 - Errores: 409 bajo el select de estado (con el máximo real de `/config`); 422 de negocio y de validación de `next_action` bajo el campo; 422 de formularios por campo. El aviso global queda para red/5xx.
 - Verificación: `pnpm lint`, `typecheck`, `build` en verde; backend 327 pasan, 1 omitido. Navegador: Chrome headless (no había navegador integrado ni Claude in Chrome), con backend temporal (`MAX_ACTIVE_PROJECTS=1`, BD y vault temporales) y script CDP. **Visto en pantalla**: tarjetas con datos reales y "1 / 1 activos", 409 bajo el select, 422 bajo el campo de próxima acción (input marcado), checkbox de hito que pasa el porcentaje de 50 % a 100 %, y error con "Reintentar" con el backend apagado. **Solo por API/código**: skeleton de carga (visto por SSR), alta de proyecto/hito/decisión desde sus formularios (compilan, no se enviaron en navegador), listas de ideas y decisiones con datos, tema claro.
-- Pendiente visual preexistente: la etiqueta de estado se estira en alto dentro de la tarjeta (CSS de V0, `.card-top` sin `align-items`); no se tocó.
+- La etiqueta de estado estirada en la tarjeta se arregló en la sesión 3 (`align-items: flex-start`).
 - Pendiente sesión 3: bandeja de ideas global, botón de export con resumen, pestaña Bot, alta de ideas desde el drawer.
+
+### Cierre de la sesión 3
+Commits: `08f4ea9` (etiqueta de estado), `5089f38` (`GET /ideas/all`), `ecb1c43` (alta de ideas en el drawer), `1f62a67` (vista de ideas, filtro, navegación), `7cf32b1` (asignar/desasignar), `1e46507` (borrar con diálogo), `4ca2372` (export), `56d755b` (pestaña Bot), `6738748` (tema claro).
+- Las ideas **no tienen estado** en BD/API (decisión: no se añade); la UI muestra "Bandeja" o el nombre del proyecto y el filtro es por proyecto / sin proyecto. `GET /ideas/all` se declara antes de cualquier ruta `/ideas/{id}`.
+- Borrar una idea es solo en BD: **no borra el `.md` ya exportado** (el export nunca borra). El diálogo de confirmación lo dice. `AlertDialog` está escrito a mano en `components/ui/alert-dialog.tsx` sobre `@base-ui/react` (ya instalado) para no arriesgar otra dependencia ajena del CLI de shadcn; se monta dentro de `.dashboard` para heredar el tema.
+- Asignar una idea a un proyecto actualiza su `last_activity_at`, así que la vista de ideas pide de nuevo los proyectos (sin skeleton).
+- La tabla del bot saca los argumentos de `syntax` quitando `/<name>` (el catálogo no tiene campo de argumentos).
+- Tema claro: `body` resolvía `--foreground` antes de `.light`, dejando texto casi blanco; se fijó `color` y fondo en `.dashboard`.
+- Verificación: `pnpm lint`, `typecheck`, `build` en verde; backend 331 pasan y 1 omitido (`test_symlinked_file_leaving_the_vault_is_rejected`: en Windows sin privilegio no se pueden crear symlinks de archivo; es intencional y los de carpeta usan junctions). Navegador (Chrome headless con CDP, backend y vault temporales, `MAX_ACTIVE_PROJECTS=1`): **visto en pantalla** alta de proyecto, hito, decisión e idea en el drawer (con sus errores de campo vacío), bandeja con filtro, asignar/desasignar, diálogo de borrado (cancelar y confirmar), export (5 archivos escritos; segundo export 0 escritos / 5 sin cambios; carpeta huérfana informada; `Notas/keep.md`, `Kairos/huerfana/x.md` y un archivo manual en `Kairos/` siguen intactos), tabla del bot (11 comandos), tema claro y errores de conexión (export, Bot, Ideas, "Reintentar") con el backend apagado. **No probado**: skeleton de carga ni el 409 de `/export` sin vault configurado (el mensaje existe en `lib/labels.ts`; el 409 ya lo cubren los tests del backend).
+- Pendiente visual: los botones `default` de shadcn (p. ej. "Añadir", "Exportar ahora") se ven sin fondo porque los tokens `--primary` de shadcn no están definidos en el tema propio de V0.
 
 ## Adaptaciones pendientes del frontend
 (hechas en la sesión 1: `lib/api.ts`, `lib/types.ts`, límite de activos por 409, estados de carga/error, limpieza de V0)
-4. Tabs Ideas/Decisiones vacías: faltan listas y alta (sesión 3). Hoy sin contadores: la API no los expone.
-5. Faltan crear proyecto y hito (sesión 2).
-7. Dividir `project-dashboard.tsx` (un solo componente denso) en componentes pequeños (sesión 2).
+(todas hechas en las sesiones 1-3)
 - El límite de activos (`MAX_ACTIVE_PROJECTS`) no lo expone ningún endpoint: el contador del encabezado muestra "N activos" sin denominador. Decidir en la sesión 2 si se añade a la API.
 - Los umbrales de color de "días sin tocar" y "Proyecto abandonado" (>30 días) siguen en el cliente solo como presentación.

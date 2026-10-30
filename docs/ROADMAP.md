@@ -11,11 +11,11 @@
 7. [x] Tests de services y API
 8. [x] Bot de Telegram: `/proyecto /idea /hito /hecho /estado /foco /decision`; filtro por TELEGRAM_ALLOWED_USER_ID
 9. [x] Export a Markdown hacia el vault de Obsidian
-10. [ ] (siguiente) Dashboard conectado a la API (reemplazar mocks, ver `docs/ESTADO.md`)
+10. [x] Dashboard conectado a la API (proyectos, ideas, export y pestaña Bot)
 
 ## Después
 
-- **v0.2** — Recordatorios y alertas de proyectos sin avance.
+- **v0.2** — (siguiente) Recordatorios y alertas de proyectos sin avance.
 - **v0.3** — Capa de IA: clasificar ideas por proyecto, proponer hitos, resumen semanal (el usuario confirma).
 - **v0.4** — Búsqueda semántica con embeddings.
 - **v1.0** — Agentes especializados con un orquestador.
