@@ -1,14 +1,15 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { AlertTriangle, ArrowUpRight, ChevronDown, Moon, Search, Sun, X } from 'lucide-react'
+import { AlertTriangle, ArrowUpRight, ChevronDown, Moon, Plus, Search, Sun, X } from 'lucide-react'
 import { Alert, AlertAction, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import type { Project } from '@/lib/types'
+import type { Project, ProjectCreate } from '@/lib/types'
 import { NO_NEXT_ACTION_FOCUS_PROMPT, errorMessage } from '@/lib/labels'
 import * as api from '@/lib/api'
 import { ProjectDrawer } from '@/components/projects/project-drawer'
+import { ProjectForm } from '@/components/projects/project-form'
 import { ProjectList } from '@/components/projects/project-list'
 import { StatusBadge } from '@/components/projects/status-badge'
 
@@ -23,7 +24,7 @@ function ProjectsSkeleton() { return <div className="project-grid" aria-busy="tr
 type Load = { state: 'loading' } | { state: 'error'; message: string } | { state: 'ready'; projects: Project[] }
 
 export default function ProjectDashboard() {
-  const [load, setLoad] = useState<Load>({ state: 'loading' }); const [filter, setFilter] = useState('all'); const [sort, setSort] = useState('touch'); const [selectedId, setSelectedId] = useState<number | null>(null); const [light, setLight] = useState(false); const [query, setQuery] = useState(''); const [notice, setNotice] = useState<string | null>(null)
+  const [load, setLoad] = useState<Load>({ state: 'loading' }); const [filter, setFilter] = useState('all'); const [sort, setSort] = useState('touch'); const [selectedId, setSelectedId] = useState<number | null>(null); const [light, setLight] = useState(false); const [query, setQuery] = useState(''); const [notice, setNotice] = useState<string | null>(null); const [creating, setCreating] = useState(false)
   const [attempt, setAttempt] = useState(0); const [maxActive, setMaxActive] = useState<number | null>(null)
   // Without the limit the counter falls back to "N activos"
   useEffect(() => { api.getConfig().then((config) => setMaxActive(config.max_active_projects), () => undefined) }, [attempt])
@@ -39,9 +40,11 @@ export default function ProjectDashboard() {
   const active = projects.filter((p) => p.status === 'active').length
   const visible = projects.filter((p) => filter === 'all' || p.status === filter).filter((p) => p.name.toLowerCase().includes(query.toLowerCase())).sort((a, b) => sort === 'progress' ? b.progress - a.progress : b.days_since_activity - a.days_since_activity)
   const focus = projects.filter((p) => p.status === 'active')
+  const create = async (data: ProjectCreate) => { const project = await api.projects.create(data); setNotice(null); setLoad((current) => current.state === 'ready' ? { state: 'ready', projects: [...current.projects, project] } : current); setCreating(false) }
   const update = (project: Project) => { setNotice(null); setLoad((current) => current.state === 'ready' ? { state: 'ready', projects: current.projects.map((p) => p.id === project.id ? project : p) } : current) }
-  return <main className={light ? 'dashboard light' : 'dashboard'}><header className="header"><div className="brand"><div className="brand-mark">●</div><span>Kairos</span></div><div className="header-actions">{load.state === 'ready' && <span className="counter">{maxActive === null ? active : `${active} / ${maxActive}`} activos</span>}<Button variant="ghost" size="icon" onClick={() => setLight(!light)} aria-label="Cambiar tema">{light ? <Moon /> : <Sun />}</Button></div></header>
+  return <main className={light ? 'dashboard light' : 'dashboard'}><header className="header"><div className="brand"><div className="brand-mark">●</div><span>Kairos</span></div><div className="header-actions">{load.state === 'ready' && <Button variant="outline" size="sm" onClick={() => setCreating(true)}><Plus data-icon="inline-start" />Nuevo proyecto</Button>}{load.state === 'ready' && <span className="counter">{maxActive === null ? active : `${active} / ${maxActive}`} activos</span>}<Button variant="ghost" size="icon" onClick={() => setLight(!light)} aria-label="Cambiar tema">{light ? <Moon /> : <Sun />}</Button></div></header>
     <div className="container">{notice && <Notice message={notice} onDismiss={() => setNotice(null)} />}<div className="intro"><div><p className="eyebrow">Tu espacio de construcción</p><h1>Menos proyectos.<br /><span>Más terminados.</span></h1><p className="lead">Mantén el foco en lo que importa y siempre ten claro el siguiente paso.</p></div></div>
+      {creating && <ProjectForm onSubmit={create} onCancel={() => setCreating(false)} onError={showError} />}
       {load.state === 'loading' && <ProjectsSkeleton />}
       {load.state === 'error' && <LoadError message={load.message} onRetry={retry} />}
       {load.state === 'ready' && projects.length === 0 && <EmptyProjects />}
