@@ -88,7 +88,7 @@ Long polling, en el mismo proceso que FastAPI. Los handlers son delgados: valida
 
 `/hecho` no cambia el estado: si el hito completado deja el proyecto al 100 %, añade una línea sugiriendo `/terminar` o agregar más hitos.
 
-**Catálogo** (`app/bot/catalog.py`): `COMMAND_CATALOG` es la única fuente de verdad de los comandos (`name`, `syntax`, `description` en español). De él salen `/ayuda` y `/start` (`messages.HELP`), el menú de Telegram y `GET /bot/commands`. Los handlers de `app.py` se registran recorriendo el catálogo (`/hecho` tiene handler propio y `/start` es un alias de `/ayuda` fuera del catálogo), así que un comando nuevo se declara en el catálogo y en `commands.py`; un test falla si falta uno de los dos. Al arrancar, `register_menu` llama a `set_my_commands` con el catálogo; si falla solo se registra el nombre de la excepción y el bot sigue.
+**Catálogo** (`app/bot/catalog.py`): `COMMAND_CATALOG` es la única fuente de verdad de los comandos (`name`, `args` y `description` en español; `syntax` se calcula como `/<name> <args>`). De él salen `/ayuda` y `/start` (`messages.HELP`), el menú de Telegram y `GET /bot/commands`. Los handlers de `app.py` se registran recorriendo el catálogo (`/hecho` tiene handler propio y `/start` es un alias de `/ayuda` fuera del catálogo), así que un comando nuevo se declara en el catálogo y en `commands.py`; un test falla si falta uno de los dos. Al arrancar, `register_menu` llama a `set_my_commands` con el catálogo; si falla solo se registra el nombre de la excepción y el bot sigue.
 
 **Respuestas**: en español, sin emojis o mínimos. Los errores de dominio (límite de activos, proyecto inexistente, falta de próxima acción, hito inexistente) los traduce `messages.error_message`. Las respuestas se truncan a 4096 caracteres.
 
@@ -136,7 +136,7 @@ Todo en español; cada archivo lleva al inicio el aviso "Generado por Kairos des
 | GET | /ideas/all | todas las ideas del usuario (con y sin proyecto), las más recientes primero |
 | PATCH, DELETE | /ideas/{id} | asignar a proyecto / borrar |
 | GET, POST | /projects/{id}/decisions | listar / crear |
-| GET | /bot/commands | catálogo de comandos del bot (`name`, `syntax`, `description`); estático, no llama a Telegram |
+| GET | /bot/commands | catálogo de comandos del bot (`name`, `args`, `syntax`, `description`); estático, no llama a Telegram |
 | GET | /config | configuración pública para la UI: `max_active_projects` |
 | POST | /export | exportar al vault de Obsidian; devuelve el resumen (proyectos, archivos escritos, sin cambios, carpetas huérfanas) |
 

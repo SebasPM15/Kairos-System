@@ -10,13 +10,14 @@ from app.bot.catalog import COMMAND_CATALOG, help_text
 from app.config import Settings
 
 
-def test_catalog_has_no_duplicates_and_syntax_matches_the_name():
+def test_catalog_has_no_duplicates_and_syntax_is_name_plus_args():
     names = [info.name for info in COMMAND_CATALOG]
 
     assert len(names) == len(set(names))
     assert "exportar" in names
     for info in COMMAND_CATALOG:
-        assert info.syntax.split()[0] == f"/{info.name}"
+        assert info.syntax == f"/{info.name} {info.args}".strip()
+        assert info.args == info.args.strip()
         assert info.description
 
 
@@ -69,3 +70,20 @@ def test_menu_failure_logs_only_the_exception_name(caplog):
 
     assert "(RuntimeError)" in caplog.text
     assert secret not in caplog.text
+
+
+def test_args_are_split_from_the_command_name():
+    by_name = {info.name: info for info in COMMAND_CATALOG}
+
+    assert by_name["hito"].args == "<slug>: <título>"
+    assert by_name["idea"].syntax == "/idea [slug:] <texto>"
+    assert by_name["exportar"].args == ""
+    assert by_name["exportar"].syntax == "/exportar"
+
+
+def test_endpoint_exposes_args_and_syntax(client):
+    commands = {c["name"]: c for c in client.get("/bot/commands").json()}
+
+    assert commands["foco"]["args"] == "<slug>: <próxima acción>"
+    assert commands["foco"]["syntax"] == "/foco <slug>: <próxima acción>"
+    assert commands["ayuda"]["args"] == ""
