@@ -38,6 +38,8 @@ export default function ProjectDashboard() {
     return () => { live = false }
   }, [attempt])
   const retry = () => { setLoad({ state: 'loading' }); setAttempt((n) => n + 1) }
+  // Silent refetch: keeps the current list on screen instead of flashing the skeleton
+  const refreshProjects = useCallback(() => { api.projects.list().then((projects) => setLoad({ state: 'ready', projects }), () => undefined) }, [])
   const showError = useCallback((error: unknown) => setNotice(errorMessage(error)), [])
   const projects = load.state === 'ready' ? load.projects : []
   const selected = projects.find((p) => p.id === selectedId) ?? null
@@ -47,7 +49,7 @@ export default function ProjectDashboard() {
   const create = async (data: ProjectCreate) => { const project = await api.projects.create(data); setNotice(null); setLoad((current) => current.state === 'ready' ? { state: 'ready', projects: [...current.projects, project] } : current); setCreating(false) }
   const update = (project: Project) => { setNotice(null); setLoad((current) => current.state === 'ready' ? { state: 'ready', projects: current.projects.map((p) => p.id === project.id ? project : p) } : current) }
   return <main className={light ? 'dashboard light' : 'dashboard'}><header className="header"><div className="brand"><div className="brand-mark">●</div><span>Kairos</span></div><nav className="main-nav" aria-label="Secciones">{VIEWS.map(([value, label]) => <button key={value} className={view === value ? 'selected' : ''} aria-current={view === value ? 'page' : undefined} onClick={() => { setView(value); setSelectedId(null) }}>{label}</button>)}</nav><div className="header-actions">{view === 'projects' && load.state === 'ready' && <Button variant="outline" size="sm" onClick={() => setCreating(true)}><Plus data-icon="inline-start" />Nuevo proyecto</Button>}{view === 'projects' && load.state === 'ready' && <span className="counter">{maxActive === null ? active : `${active} / ${maxActive}`} activos</span>}<Button variant="ghost" size="icon" onClick={() => setLight(!light)} aria-label="Cambiar tema">{light ? <Moon /> : <Sun />}</Button></div></header>
-    <div className="container">{notice && <Notice message={notice} onDismiss={() => setNotice(null)} />}{view === 'ideas' && <IdeasView projects={projects} onError={showError} />}
+    <div className="container">{notice && <Notice message={notice} onDismiss={() => setNotice(null)} />}{view === 'ideas' && <IdeasView projects={projects} onProjectsChanged={refreshProjects} onError={showError} />}
       {view === 'projects' && <><div className="intro"><div><p className="eyebrow">Tu espacio de construcción</p><h1>Menos proyectos.<br /><span>Más terminados.</span></h1><p className="lead">Mantén el foco en lo que importa y siempre ten claro el siguiente paso.</p></div></div>
       {creating && <ProjectForm onSubmit={create} onCancel={() => setCreating(false)} onError={showError} />}
       {load.state === 'loading' && <ProjectsSkeleton />}
