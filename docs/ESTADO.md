@@ -130,6 +130,44 @@ Commits: `e916c15` (tokens de tema), `fac4e12` y `74d488b` (catálogo: `feat(api
 - Verificación: lint, typecheck y build en verde. Navegador (Chrome headless, contra el stack de Docker con datos temporales): botones "Añadir", "Exportar ahora" y "Borrar idea" con fondo y texto calculados en ambos temas (primario lima/oscuro, destructivo rojo translúcido), tabla del bot con la columna de argumentos. **Solo por código/API**: el resto de botones de shadcn (secundario, link) no se vieron.
 - Nota: `docker compose` lee `env_file: .env`; para probar sin el `.env` real se usó un override con `env_file: !reset []`, `--env-file` temporal y proyecto `kairos-verify`, eliminado al terminar (contenedores, volumen e imágenes).
 
+## Entorno de demo
+Base y vault aparte para revisar el dashboard a mano; nunca tocan `kairos.db` ni tu vault. `backend/scripts/seed_demo.py` carga los datos con los services (límite de activos, próxima acción y porcentaje calculado se respetan) y se niega a correr si la base no es de demo (el nombre del archivo debe incluir `demo`), si no hay tablas o si ya hay datos sin `--reset`. `--reset` borra solo los proyectos e ideas del usuario actual de esa base. La base de demo es `backend/demo.db` (ya ignorada por git); el vault de demo va en la carpeta temporal.
+
+**PowerShell** (terminal 1, backend, desde `backend/`):
+```powershell
+.venv\Scripts\Activate.ps1
+$env:DATABASE_URL = "sqlite:///./demo.db"
+$env:OBSIDIAN_VAULT_PATH = "$env:TEMP\kairos-demo-vault"
+$env:MAX_ACTIVE_PROJECTS = "3"
+New-Item -ItemType Directory -Force $env:OBSIDIAN_VAULT_PATH | Out-Null
+alembic upgrade head
+python scripts/seed_demo.py
+uvicorn app.main:app --reload
+```
+**bash** (Git Bash, desde `backend/`):
+```bash
+source .venv/Scripts/activate
+export DATABASE_URL="sqlite:///./demo.db" OBSIDIAN_VAULT_PATH="$TEMP/kairos-demo-vault"
+export TELEGRAM_BOT_TOKEN="" TELEGRAM_ALLOWED_USER_ID="" MAX_ACTIVE_PROJECTS=3
+mkdir -p "$OBSIDIAN_VAULT_PATH"
+alembic upgrade head
+python scripts/seed_demo.py
+uvicorn app.main:app --reload
+```
+**Bot sin token**: el backend lee `.env` desde su carpeta de trabajo (`backend/`), donde hoy no hay uno (el `.env` de Docker está en la raíz), así que el bot queda desactivado. Si algún día creas `backend/.env` con el token, quítalo mientras uses la demo: en PowerShell asignar `""` a una variable la borra en vez de vaciarla, por eso solo el bloque bash las vacía.
+
+**Frontend** (terminal 2, desde `frontend/`): `pnpm dev` y abrir http://localhost:3000.
+
+**Resetear** (con las mismas variables de entorno): `python scripts/seed_demo.py --reset`. Para empezar de cero, parar el backend, borrar `backend/demo.db` y la carpeta `kairos-demo-vault` de `%TEMP%`, y repetir `alembic upgrade head` y el seed. Para volver a lo normal, cerrar esas terminales (las variables solo viven en ellas) o ejecutar `Remove-Item Env:DATABASE_URL, Env:OBSIDIAN_VAULT_PATH` (PowerShell) / `unset DATABASE_URL OBSIDIAN_VAULT_PATH` (bash).
+
+**Datos** (9 proyectos, 8 ideas):
+- Activos (3, el máximo, todos con próxima acción): 0 % (0 de 4 hitos; título de 100+ caracteres y próxima acción de 200+), 60 % (3 de 5) y 80 % (4 de 5).
+- Pausados (3): "Blog de cocina casera" con 47 días sin actividad (el «abandonado»), "Huerto urbano" y "Aprender guitarra" (sin próxima acción).
+- Idea (2), terminado (1, 100 %).
+- Decisiones (1 a 3) en cuatro proyectos y hitos hechos y pendientes mezclados. Ideas: 4 en la bandeja (una muy larga) y 4 repartidas en proyectos.
+- La última actividad va de 1 a 47 días atrás (se retrocede la fecha a mano al final, porque los services siempre ponen «ahora») para ver los colores de «días sin tocar».
+- El «abandonado» quedó **pausado**: con el límite de 3 ocupado por los activos no cabe un cuarto activo, y la UI solo muestra «Proyecto abandonado» en proyectos activos, así que ese aviso no aparece en la demo. Activarlo desde la UI (tras pausar otro) reinicia su actividad a «ahora».
+
 ## Adaptaciones pendientes del frontend
 (hechas en la sesión 1: `lib/api.ts`, `lib/types.ts`, límite de activos por 409, estados de carga/error, limpieza de V0)
 (todas hechas en las sesiones 1-3)
