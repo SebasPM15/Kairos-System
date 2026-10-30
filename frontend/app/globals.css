@@ -38,3 +38,7 @@ input[aria-invalid="true"] { border-color: var(--danger); }
 .idea-tag.inbox { color: var(--warm); }
 .idea-meta select { margin-left: auto; }
 .idea-meta { row-gap: 6px; }
+.export-panel { border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); padding: 18px; margin-bottom: 28px; }
+.export-panel .section-title { margin-top: 0; }
+.export-result { margin-top: 14px; font-size: 13px; line-height: 1.5; }
+.export-result p { margin: 0 0 6px; }
