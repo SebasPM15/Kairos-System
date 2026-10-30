@@ -63,3 +63,5 @@ export type ExportSummary = {
   files_unchanged: number
   orphans: string[]
 }
+
+export type PublicConfig = { max_active_projects: number }

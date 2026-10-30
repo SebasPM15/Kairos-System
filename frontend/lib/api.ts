@@ -9,53 +9,62 @@ import type {
   MilestoneUpdate,
   Project,
   ProjectCreate,
+  PublicConfig,
   ProjectUpdate,
 } from './types'
 
 const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/$/, '')
 
+// Pydantic validation error as returned by FastAPI on 422
+export type ValidationIssue = { loc: (string | number)[]; msg: string; type: string }
+
+export type ErrorKind = 'network' | 'business' | 'validation' | 'unknown'
+
 export class ApiError extends Error {
   constructor(
     // 0 when the request never reached the server
     readonly status: number,
-    // FastAPI's `detail`: a string, or a list of validation errors on 422
+    // FastAPI's `detail`: a string for domain errors, a list for Pydantic validation
     readonly detail: unknown,
+    // Route template such as "PATCH /projects/:id"; messages are keyed by it
+    readonly endpoint: string,
   ) {
     super(typeof detail === 'string' ? detail : `API error ${status}`)
     this.name = 'ApiError'
   }
 
-  get isNetworkError() {
-    return this.status === 0
+  get kind(): ErrorKind {
+    if (this.status === 0) return 'network'
+    if (typeof this.detail === 'string') return 'business'
+    return Array.isArray(this.detail) ? 'validation' : 'unknown'
   }
 
-  // Active-project limit reached
-  get isActiveLimit() {
-    return this.status === 409
-  }
-
-  // Validation failure, e.g. activating without a next action
-  get isValidation() {
-    return this.status === 422
+  get issues(): ValidationIssue[] {
+    return this.kind === 'validation' ? (this.detail as ValidationIssue[]) : []
   }
 }
 
+function routeOf(method: string, path: string) {
+  return `${method} ${path.replace(/\/\d+(?=\/|$)/g, '/:id')}`
+}
+
 async function request<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+  const method = init.method ?? 'GET'
   let response: Response
   try {
     response = await fetch(`${BASE_URL}${path}`, {
-      method: init.method ?? 'GET',
+      method,
       headers: init.body === undefined ? undefined : { 'Content-Type': 'application/json' },
       body: init.body === undefined ? undefined : JSON.stringify(init.body),
       cache: 'no-store',
     })
   } catch {
-    throw new ApiError(0, 'Network error')
+    throw new ApiError(0, null, routeOf(method, path))
   }
 
   if (!response.ok) {
     const payload = await response.json().catch(() => null)
-    throw new ApiError(response.status, payload?.detail ?? response.statusText)
+    throw new ApiError(response.status, payload?.detail ?? null, routeOf(method, path))
   }
   if (response.status === 204) return undefined as T
   return response.json() as Promise<T>
@@ -105,3 +114,5 @@ export const bot = {
 export const vault = {
   export: () => request<ExportSummary>('/export', { method: 'POST' }),
 }
+
+export const getConfig = () => request<PublicConfig>('/config')
