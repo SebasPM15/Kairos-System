@@ -27,7 +27,7 @@ _Última actualización: 2026-10-30_
 - Probar el bot contra Telegram real (token y `TELEGRAM_ALLOWED_USER_ID` en `.env`).
 - Hito 10 de v0.1: dashboard conectado a la API (ver "Adaptaciones pendientes del frontend"), en tres sesiones:
   1. ~~Cliente API y limpieza~~ (hecho).
-  2. Proyectos (crear proyecto e hitos, manejo fino del 409/422, dividir `project-dashboard.tsx`; adaptaciones 5 y 7).
+  2. ~~Proyectos~~ (hecho, ver "Cierre de la sesión 2").
   3. Bandeja, export y pestaña "Bot" (ideas, decisiones, `POST /export` y los comandos desde `GET /bot/commands`; adaptación 4).
 - Probar `/exportar` y abrir el vault real en Obsidian (hasta ahora solo probado con `vault-dev`).
 
@@ -76,13 +76,13 @@ Cada iteración = un commit pequeño y convencional, sin coautoría de Claude, c
 1. [x] Backend: `GET /config` -> `{"max_active_projects": N}` desde settings. Router delgado, test incluido, sin tocar la lógica del límite. (`e77da69` feat(api): GET /config exposes the active projects limit)
 2. [x] `lib/api.ts` y errores: añadir `getConfig()`. Ajustar `ApiError` para distinguir por la FORMA del `detail`: string = error de negocio, lista = validación Pydantic (mapeable a errores por campo). `errorMessage()` debe depender de status + endpoint, con el texto del `detail` solo como respaldo. (`158a24b` feat(frontend): typed API errors by detail shape and getConfig)
 3. [x] Extraer de `project-dashboard.tsx` la lista y la tarjeta de proyecto a `components/projects/`. Comportamiento idéntico, sin librería de estado nueva. (`ca4e3e3` StatusBadge, `dd5eb89` ProjectCard, `2315b67` ProjectList; todos `refactor(frontend)`)
-4. [ ] Tarjeta: estado con `lib/labels.ts`, porcentaje tal cual del backend (no recalcular), próxima acción visible, umbral de "abandonado" como constante nombrada en un solo lugar. Contador "N / máx" activos usando `/config`.
-5. [ ] Sustituir skeleton y aviso con CSS propio por los componentes shadcn skeleton y alert si no añaden dependencias (si hace falta alguna, justificarla antes de instalar). Comentar el motivo de `unrs-resolver: false` donde esté.
-6. [ ] Drawer del proyecto con secciones de hitos, ideas y decisiones: lectura, y marcar hito como hecho (el porcentaje debe refrescarse desde el backend).
-7. [ ] Formularios de alta: crear proyecto y crear hito. Validación mínima en cliente; la verdad la tiene el backend.
-8. [ ] Registrar decisión (el endpoint `POST /projects/{id}/decisions` existe) y cambios de estado desde la UI (activar, pausar, terminar).
-9. [ ] Errores en su sitio: 409 junto al control que lo causó, con el máximo real de `/config`; 422 de negocio junto al campo de próxima acción; 422 de validación mapeado por campo. El aviso global queda solo para errores sin contexto (red, 5xx).
-10. [ ] Verificación y cierre: `pnpm lint`, `typecheck` y `build` en verde; suite completa del backend (323 + nuevos). Prueba manual del flujo: crear proyecto, añadir hitos, activar con y sin próxima acción (422), superar el límite (409), marcar hito hecho y ver cambiar el porcentaje, y backend apagado. Si se puede abrir navegador, hacerlo y anotar qué se probó en navegador y qué solo a nivel API. Después, actualizar este archivo (y ROADMAP si cambia algo) en un commit propio. Entregar resumen para el chat de revisión: commits, archivos clave, decisiones, dependencias, resultado de lint/build/tests y pendientes para la sesión 3.
+4. [x] Tarjeta: estado con `lib/labels.ts`, porcentaje tal cual del backend (no recalcular), próxima acción visible, umbral de "abandonado" como constante nombrada en un solo lugar. Contador "N / máx" activos usando `/config`.
+5. [x] Sustituir skeleton y aviso con CSS propio por los componentes shadcn skeleton y alert si no añaden dependencias (si hace falta alguna, justificarla antes de instalar). Comentar el motivo de `unrs-resolver: false` donde esté.
+6. [x] Drawer del proyecto con secciones de hitos, ideas y decisiones: lectura, y marcar hito como hecho (el porcentaje debe refrescarse desde el backend).
+7. [x] Formularios de alta: crear proyecto y crear hito. Validación mínima en cliente; la verdad la tiene el backend.
+8. [x] Registrar decisión (el endpoint `POST /projects/{id}/decisions` existe) y cambios de estado desde la UI (activar, pausar, terminar).
+9. [x] Errores en su sitio: 409 junto al control que lo causó, con el máximo real de `/config`; 422 de negocio junto al campo de próxima acción; 422 de validación mapeado por campo. El aviso global queda solo para errores sin contexto (red, 5xx).
+10. [x] Verificación y cierre: `pnpm lint`, `typecheck` y `build` en verde; suite completa del backend (323 + nuevos). Prueba manual del flujo: crear proyecto, añadir hitos, activar con y sin próxima acción (422), superar el límite (409), marcar hito hecho y ver cambiar el porcentaje, y backend apagado. Si se puede abrir navegador, hacerlo y anotar qué se probó en navegador y qué solo a nivel API. Después, actualizar este archivo (y ROADMAP si cambia algo) en un commit propio. Entregar resumen para el chat de revisión: commits, archivos clave, decisiones, dependencias, resultado de lint/build/tests y pendientes para la sesión 3.
 
 ### Decisiones y avisos de la sesión
 - `pnpm-workspace.yaml` tiene `allowBuilds: unrs-resolver: false` porque pnpm pedía aprobar el script de build de `unrs-resolver` (dependencia transitiva de `eslint-config-next`); usa binarios precompilados y no necesita compilar. En la iteración 5 hay que dejar un comentario con este motivo en ese archivo.
@@ -93,6 +93,19 @@ Cada iteración = un commit pequeño y convencional, sin coautoría de Claude, c
 - Duda abierta (iteración 3): la condición `days > 30 && status === 'active'` se repite dos veces dentro de `ProjectCard`, y el texto de próxima acción vacía se resuelve distinto en la tarjeta ("Sin próxima acción definida") y en la tarjeta de foco ("Define una próxima acción..."). No se tocó; encaja con la iteración 4.
 - Iteración 3 verificada por curl, no en navegador: el HTML SSR trae el título y el skeleton "Cargando proyectos" con backend temporal y un proyecto creado. Las tarjetas ya renderizadas no se vieron en un navegador.
 - Duda abierta: el umbral de "abandonado" (>30 días) vive en el cliente solo como presentación.
+
+### Cierre de la sesión 2 (iteraciones 4-10)
+Commits: `d8efbf2` (`isAbandoned`, constantes de próxima acción, contador "N / máx"), `a74b42a` (shadcn Skeleton/Alert, comentario de `unrs-resolver`), `3939fa7` y `a4ed761` (drawer extraído; listas de ideas y decisiones), `27a89ff` (alta de hitos), `cc14ccf` (alta de proyecto), `6107a5b` (alta de decisión), `a18e899` (409/422 junto a su control).
+- `lib/project-health.ts`: `ABANDONED_AFTER_DAYS = 30` e `isAbandoned(project)`; solo la tarjeta lo usa (la tarjeta de foco nunca mostró el aviso y no se le añadió).
+- Texto de próxima acción vacía: la diferencia tarjeta ("Sin próxima acción definida") / foco ("Define una próxima acción...") es intencional; quedan como constantes en `lib/labels.ts`.
+- Contador: "N / máx activos" con `GET /config`; si falla, cae a "N activos".
+- Skeleton y Alert de shadcn. El CLI de shadcn añadió por error la dependencia `cn` (paquete ajeno) y importaba de ella: se revirtió y los archivos importan `@/lib/utils`. Sin dependencias nuevas.
+- Drawer en `components/projects/` (`project-drawer`, `milestone-list/form`, `idea-list`, `decision-list/form`); `project-form` para el alta. Tras crear hito/decisión o marcar hecho se vuelve a pedir el proyecto: el porcentaje viene siempre del backend.
+- Cambio de estado: sigue siendo el `select` del drawer (activar/pausar/terminar); no se añadieron botones.
+- Errores: 409 bajo el select de estado (con el máximo real de `/config`); 422 de negocio y de validación de `next_action` bajo el campo; 422 de formularios por campo. El aviso global queda para red/5xx.
+- Verificación: `pnpm lint`, `typecheck`, `build` en verde; backend 327 pasan, 1 omitido. Navegador: Chrome headless (no había navegador integrado ni Claude in Chrome), con backend temporal (`MAX_ACTIVE_PROJECTS=1`, BD y vault temporales) y script CDP. **Visto en pantalla**: tarjetas con datos reales y "1 / 1 activos", 409 bajo el select, 422 bajo el campo de próxima acción (input marcado), checkbox de hito que pasa el porcentaje de 50 % a 100 %, y error con "Reintentar" con el backend apagado. **Solo por API/código**: skeleton de carga (visto por SSR), alta de proyecto/hito/decisión desde sus formularios (compilan, no se enviaron en navegador), listas de ideas y decisiones con datos, tema claro.
+- Pendiente visual preexistente: la etiqueta de estado se estira en alto dentro de la tarjeta (CSS de V0, `.card-top` sin `align-items`); no se tocó.
+- Pendiente sesión 3: bandeja de ideas global, botón de export con resumen, pestaña Bot, alta de ideas desde el drawer.
 
 ## Adaptaciones pendientes del frontend
 (hechas en la sesión 1: `lib/api.ts`, `lib/types.ts`, límite de activos por 409, estados de carga/error, limpieza de V0)
