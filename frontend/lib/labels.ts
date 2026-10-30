@@ -58,3 +58,7 @@ export function fieldErrors(error: unknown): Record<string, string> {
   }
   return result
 }
+
+// Intentionally different: the card states a fact, the focus card nudges the user to unblock the project
+export const NO_NEXT_ACTION_LABEL = 'Sin próxima acción definida'
+export const NO_NEXT_ACTION_FOCUS_PROMPT = 'Define una próxima acción para desbloquearlo'
