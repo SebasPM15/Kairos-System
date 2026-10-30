@@ -10,3 +10,7 @@ __pycache__/
 vault-dev/
 
 .coverage
+
+# Demo environment (docs/ESTADO.md, "Entorno de demo")
+backend/demo.db
+demo-vault/
