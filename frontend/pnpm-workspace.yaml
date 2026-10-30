@@ -4,5 +4,6 @@ minimumReleaseAgeExclude:
   - '@next/*'
   - next
 
+# unrs-resolver (transitive dep of eslint-config-next) ships prebuilt binaries, so its build script is not needed
 allowBuilds:
   unrs-resolver: false
