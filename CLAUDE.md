@@ -53,6 +53,7 @@ Copiar `.env.example` a `.env` y completar. El `.env` nunca se commitea.
 - Las pruebas manuales usan solo BD y `OBSIDIAN_VAULT_PATH` temporales (y bot sin token); nunca la SQLite ni el vault reales.
 - Commits convencionales, pequeños, sin coautoría de Claude.
 - Respetar las capas del backend: routers delgados -> services -> repositories.
+- En tareas de diseño/UI, usar los skills de diseño que existan en `~/.claude/skills` (p. ej. `impeccable`, `ui-ux-pro-max`, `design-system`, `ui-styling`) y comprobar el resultado en navegador; los skills de marketing no aplican.
 - Decisiones cerradas (no cambiar sin pedirlo): BD fuente de verdad, vault unidireccional, `MAX_ACTIVE_PROJECTS=3`, estados en inglés en BD/API, porcentaje calculado en el backend.
 
 ## Regla de sesión
