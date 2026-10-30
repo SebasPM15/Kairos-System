@@ -55,7 +55,7 @@ export type Decision = {
 
 export type DecisionCreate = { title: string; rationale: string }
 
-export type BotCommand = { name: string; syntax: string; description: string }
+export type BotCommand = { name: string; args: string; syntax: string; description: string }
 
 export type ExportSummary = {
   projects_exported: number
