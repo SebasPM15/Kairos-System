@@ -42,3 +42,7 @@ input[aria-invalid="true"] { border-color: var(--danger); }
 .export-panel .section-title { margin-top: 0; }
 .export-result { margin-top: 14px; font-size: 13px; line-height: 1.5; }
 .export-result p { margin: 0 0 6px; }
+.command-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.command-table th { text-align: left; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .14em; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.command-table td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.command-table code { font: 12px monospace; color: var(--accent); }

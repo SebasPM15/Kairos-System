@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import type { Project, ProjectCreate } from '@/lib/types'
 import { NO_NEXT_ACTION_FOCUS_PROMPT, errorMessage } from '@/lib/labels'
 import * as api from '@/lib/api'
+import { BotCommands } from '@/components/bot/bot-commands'
 import { ExportPanel } from '@/components/export/export-panel'
 import { IdeasView } from '@/components/ideas/ideas-view'
 import { ProjectDrawer } from '@/components/projects/project-drawer'
@@ -23,8 +24,8 @@ function EmptyProjects() { return <div className="state-panel"><h3>Aún no tiene
 function ProjectsSkeleton() { return <div className="project-grid" aria-busy="true" aria-label="Cargando proyectos">{[0, 1, 2].map((i) => <Skeleton key={i} className="project-card min-h-[230px]" />)}</div> }
 
 
-type View = 'projects' | 'ideas'
-const VIEWS: [View, string][] = [['projects', 'Proyectos'], ['ideas', 'Ideas']]
+type View = 'projects' | 'ideas' | 'bot'
+const VIEWS: [View, string][] = [['projects', 'Proyectos'], ['ideas', 'Ideas'], ['bot', 'Bot']]
 
 type Load = { state: 'loading' } | { state: 'error'; message: string } | { state: 'ready'; projects: Project[] }
 
@@ -51,6 +52,7 @@ export default function ProjectDashboard() {
   const update = (project: Project) => { setNotice(null); setLoad((current) => current.state === 'ready' ? { state: 'ready', projects: current.projects.map((p) => p.id === project.id ? project : p) } : current) }
   return <main className={light ? 'dashboard light' : 'dashboard'}><header className="header"><div className="brand"><div className="brand-mark">●</div><span>Kairos</span></div><nav className="main-nav" aria-label="Secciones">{VIEWS.map(([value, label]) => <button key={value} className={view === value ? 'selected' : ''} aria-current={view === value ? 'page' : undefined} onClick={() => { setView(value); setSelectedId(null) }}>{label}</button>)}</nav><div className="header-actions"><Button variant="outline" size="sm" onClick={() => setExporting((open) => !open)} aria-expanded={exporting}>Exportar a Obsidian</Button>{view === 'projects' && load.state === 'ready' && <Button variant="outline" size="sm" onClick={() => setCreating(true)}><Plus data-icon="inline-start" />Nuevo proyecto</Button>}{view === 'projects' && load.state === 'ready' && <span className="counter">{maxActive === null ? active : `${active} / ${maxActive}`} activos</span>}<Button variant="ghost" size="icon" onClick={() => setLight(!light)} aria-label="Cambiar tema">{light ? <Moon /> : <Sun />}</Button></div></header>
     <div className="container">{notice && <Notice message={notice} onDismiss={() => setNotice(null)} />}{exporting && <ExportPanel onClose={() => setExporting(false)} />}{view === 'ideas' && <IdeasView projects={projects} onProjectsChanged={refreshProjects} onError={showError} />}
+      {view === 'bot' && <BotCommands />}
       {view === 'projects' && <><div className="intro"><div><p className="eyebrow">Tu espacio de construcción</p><h1>Menos proyectos.<br /><span>Más terminados.</span></h1><p className="lead">Mantén el foco en lo que importa y siempre ten claro el siguiente paso.</p></div></div>
       {creating && <ProjectForm onSubmit={create} onCancel={() => setCreating(false)} onError={showError} />}
       {load.state === 'loading' && <ProjectsSkeleton />}
