@@ -75,7 +75,7 @@ Cada iteración = un commit pequeño y convencional, sin coautoría de Claude, c
 
 1. [x] Backend: `GET /config` -> `{"max_active_projects": N}` desde settings. Router delgado, test incluido, sin tocar la lógica del límite. (`e77da69` feat(api): GET /config exposes the active projects limit)
 2. [x] `lib/api.ts` y errores: añadir `getConfig()`. Ajustar `ApiError` para distinguir por la FORMA del `detail`: string = error de negocio, lista = validación Pydantic (mapeable a errores por campo). `errorMessage()` debe depender de status + endpoint, con el texto del `detail` solo como respaldo. (`158a24b` feat(frontend): typed API errors by detail shape and getConfig)
-3. [ ] Extraer de `project-dashboard.tsx` la lista y la tarjeta de proyecto a `components/projects/`. Comportamiento idéntico, sin librería de estado nueva.
+3. [x] Extraer de `project-dashboard.tsx` la lista y la tarjeta de proyecto a `components/projects/`. Comportamiento idéntico, sin librería de estado nueva. (`ca4e3e3` StatusBadge, `dd5eb89` ProjectCard, `2315b67` ProjectList; todos `refactor(frontend)`)
 4. [ ] Tarjeta: estado con `lib/labels.ts`, porcentaje tal cual del backend (no recalcular), próxima acción visible, umbral de "abandonado" como constante nombrada en un solo lugar. Contador "N / máx" activos usando `/config`.
 5. [ ] Sustituir skeleton y aviso con CSS propio por los componentes shadcn skeleton y alert si no añaden dependencias (si hace falta alguna, justificarla antes de instalar). Comentar el motivo de `unrs-resolver: false` donde esté.
 6. [ ] Drawer del proyecto con secciones de hitos, ideas y decisiones: lectura, y marcar hito como hecho (el porcentaje debe refrescarse desde el backend).
@@ -89,6 +89,9 @@ Cada iteración = un commit pequeño y convencional, sin coautoría de Claude, c
 - Las pruebas manuales usan siempre BD y vault temporales: `DATABASE_URL` y `OBSIDIAN_VAULT_PATH` apuntan a la carpeta temporal, y `TELEGRAM_BOT_TOKEN`/`TELEGRAM_ALLOWED_USER_ID` van vacíos. En la sesión 1 se sobrescribió la BD pero no el vault (Settings lee `.env`); no se llamó a `/export`, así que no se escribió nada.
 - `errorMessage(error, { maxActive })` se resuelve por `status + endpoint` (p. ej. `409 PATCH /projects/:id`); `fieldErrors(error)` mapea los issues de Pydantic por nombre de campo. El 409 de `/export` es otro conflicto (vault) y no se confunde con el límite de activos.
 - Duda abierta: la verificación visual en navegador no se hizo en la sesión 1; se intentará en la iteración 10.
+- Iteración 3: `StatusBadge` (compartido por la tarjeta y la tarjeta de foco, que sigue en el dashboard) vive en `components/projects/status-badge.tsx`; `ProgressBar` y `daysTone` quedaron privados en `project-card.tsx`. `ProjectList` incluye el bloque "No encontramos proyectos". Props con interfaz exportada por componente. Estado y llamadas a la API siguen en `project-dashboard.tsx`.
+- Duda abierta (iteración 3): la condición `days > 30 && status === 'active'` se repite dos veces dentro de `ProjectCard`, y el texto de próxima acción vacía se resuelve distinto en la tarjeta ("Sin próxima acción definida") y en la tarjeta de foco ("Define una próxima acción..."). No se tocó; encaja con la iteración 4.
+- Iteración 3 verificada por curl, no en navegador: el HTML SSR trae el título y el skeleton "Cargando proyectos" con backend temporal y un proyecto creado. Las tarjetas ya renderizadas no se vieron en un navegador.
 - Duda abierta: el umbral de "abandonado" (>30 días) vive en el cliente solo como presentación.
 
 ## Adaptaciones pendientes del frontend
