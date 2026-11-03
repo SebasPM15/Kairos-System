@@ -49,7 +49,7 @@ export function DecisionForm({ onSubmit, onError }: DecisionFormProps) {
       <Textarea value={rationale} onChange={(e) => setRationale(e.target.value)} disabled={busy} submitOnEnter />
     </Field>
     <div className="form-actions">
-      <Button type="submit" size="sm" disabled={busy}>{busy ? 'Registrando…' : 'Registrar decisión'}</Button>
+      <Button type="submit" size="sm" loading={busy} loadingText="Registrando…">Registrar decisión</Button>
     </div>
   </form>
 }

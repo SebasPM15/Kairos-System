@@ -46,7 +46,7 @@ export function IdeaForm({ onSubmit, onError, placeholder = 'Nueva idea', autoFo
           autoFocus={autoFocus}
           submitOnEnter
         />
-        <Button type="submit" size="sm" disabled={busy}>{busy ? 'Añadiendo…' : 'Añadir'}</Button>
+        <Button type="submit" size="sm" loading={busy} loadingText="Añadiendo…">Añadir</Button>
       </div>
     </Field>
   </form>

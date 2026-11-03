@@ -43,7 +43,7 @@ export function ProjectForm({ onSubmit, onCancel, onError }: ProjectFormProps) {
       <Textarea value={description} onChange={(e) => setDescription(e.target.value)} disabled={busy} submitOnEnter />
     </Field>
     <div className="form-actions">
-      <Button type="submit" size="sm" disabled={busy}>{busy ? 'Creando…' : 'Crear proyecto'}</Button>
+      <Button type="submit" size="sm" loading={busy} loadingText="Creando…">Crear proyecto</Button>
       <Button type="button" size="sm" variant="ghost" onClick={onCancel} disabled={busy}>Cancelar</Button>
     </div>
   </form>

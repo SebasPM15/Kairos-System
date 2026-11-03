@@ -36,7 +36,7 @@ export function MilestoneForm({ onSubmit, onError }: MilestoneFormProps) {
     <Field label="Título del hito" hideLabel error={error}>
       <div className="action-input">
         <Input ref={titleRef} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Nuevo hito" disabled={busy} />
-        <Button type="submit" size="sm" disabled={busy}>{busy ? 'Añadiendo…' : 'Añadir'}</Button>
+        <Button type="submit" size="sm" loading={busy} loadingText="Añadiendo…">Añadir</Button>
       </div>
     </Field>
   </form>

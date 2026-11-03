@@ -44,14 +44,27 @@ function Button({
   className,
   variant = 'default',
   size = 'default',
+  loading = false,
+  loadingText,
+  disabled,
+  children,
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants> & {
+  // While true the button is disabled and announces itself as busy
+  loading?: boolean
+  // Shown instead of the children while loading, e.g. "Creando…"
+  loadingText?: string
+}) {
   return (
     <ButtonPrimitive
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
       {...props}
-    />
+    >
+      {loading && loadingText ? loadingText : children}
+    </ButtonPrimitive>
   )
 }
 
