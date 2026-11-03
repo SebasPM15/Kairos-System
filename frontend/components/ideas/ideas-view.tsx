@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Select } from '@/components/ui/select'
 import type { Idea, Project } from '@/lib/types'
-import { errorMessage } from '@/lib/labels'
+import { TOAST, errorMessage } from '@/lib/labels'
+import { toast } from '@/components/ui/toaster'
 import { formatDate } from '@/lib/format'
 import * as api from '@/lib/api'
 import { DeleteIdeaDialog } from './delete-idea-dialog'
@@ -43,6 +44,7 @@ export function IdeasView({ projects, onProjectsChanged, onError }: IdeasViewPro
   const add = async (content: string) => {
     const idea = await api.ideas.create({ content })
     setLoad((current) => current.state === 'ready' ? { state: 'ready', ideas: [idea, ...current.ideas] } : current)
+    toast.success(TOAST.ideaAdded)
   }
 
   const assign = async (idea: Idea, value: string) => {
@@ -50,12 +52,15 @@ export function IdeasView({ projects, onProjectsChanged, onError }: IdeasViewPro
       const updated = await api.ideas.assign(idea.id, value === INBOX ? null : Number(value))
       setLoad((current) => current.state === 'ready' ? { state: 'ready', ideas: current.ideas.map((i) => i.id === updated.id ? updated : i) } : current)
       onProjectsChanged()
+      if (updated.project_id === null) toast.success(TOAST.ideaUnassigned)
+      else toast.success(TOAST.ideaAssigned, projectName(updated.project_id))
     } catch (error) { onError(error) }
   }
 
   const remove = async (idea: Idea) => {
     try {
       await api.ideas.remove(idea.id)
+      toast.success(TOAST.ideaDeleted)
       setLoad((current) => current.state === 'ready' ? { state: 'ready', ideas: current.ideas.filter((i) => i.id !== idea.id) } : current)
     } catch (error) { onError(error) }
     setPendingDelete(null)

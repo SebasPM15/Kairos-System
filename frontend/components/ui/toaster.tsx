@@ -1,0 +1,45 @@
+'use client'
+
+import type { ReactNode } from 'react'
+import { Toast } from '@base-ui/react/toast'
+import { X } from 'lucide-react'
+import { portalContainerRef } from '@/lib/portal-container'
+
+// Lets code outside React components (the dashboard context) raise toasts too
+const manager = Toast.createToastManager()
+
+const SUCCESS_MS = 4000
+const ERROR_MS = 8000
+
+// Short-lived feedback only: a toast confirms something already done and never holds the only way to fix a problem
+export const toast = {
+  success: (title: string, description?: string) =>
+    manager.add({ type: 'success', title, description, timeout: SUCCESS_MS }),
+  // High priority makes Base UI announce it as an alert
+  error: (title: string, description?: string) =>
+    manager.add({ type: 'error', title, description, timeout: ERROR_MS, priority: 'high' }),
+}
+
+function ToastList() {
+  const { toasts } = Toast.useToastManager()
+  return <Toast.Portal container={portalContainerRef}>
+    <Toast.Viewport className="toast-viewport" aria-label="Notificaciones">
+      {toasts.map((item) => <Toast.Root key={item.id} toast={item} className="toast" data-type={item.type}>
+        <Toast.Content className="toast-content">
+          <div className="toast-text">
+            <Toast.Title className="toast-title" />
+            <Toast.Description className="toast-description" />
+          </div>
+          <Toast.Close className="toast-close" aria-label="Cerrar aviso"><X aria-hidden="true" /></Toast.Close>
+        </Toast.Content>
+      </Toast.Root>)}
+    </Toast.Viewport>
+  </Toast.Portal>
+}
+
+export function Toaster({ children }: { children?: ReactNode }) {
+  return <Toast.Provider toastManager={manager} limit={3}>
+    {children}
+    <ToastList />
+  </Toast.Provider>
+}

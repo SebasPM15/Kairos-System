@@ -1,5 +1,5 @@
 import { ApiError } from './api'
-import type { ProjectStatus } from './types'
+import type { ExportSummary, ProjectStatus } from './types'
 
 export const statusLabel: Record<ProjectStatus, string> = {
   idea: 'Idea',
@@ -88,3 +88,22 @@ export function fieldErrors(error: unknown): Record<string, string> {
 // Intentionally different: the card states a fact, the focus card nudges the user to unblock the project
 export const NO_NEXT_ACTION_LABEL = 'Sin próxima acción definida'
 export const NO_NEXT_ACTION_FOCUS_PROMPT = 'Define una próxima acción para desbloquearlo'
+
+// Success toasts: short confirmations of something that already happened
+export const TOAST = {
+  projectCreated: 'Proyecto creado',
+  milestoneAdded: 'Hito añadido',
+  decisionAdded: 'Decisión registrada',
+  ideaAdded: 'Idea añadida',
+  ideaAssigned: 'Idea asignada',
+  ideaUnassigned: 'Idea devuelta a la bandeja',
+  ideaDeleted: 'Idea borrada',
+  exportDone: 'Exportación lista',
+} as const
+
+export function exportSummaryText(summary: ExportSummary): string {
+  const projects = formatCount('projectExported', summary.projects_exported)
+  const written = formatCount('fileWritten', summary.files_written)
+  const unchanged = formatCount('fileUnchanged', summary.files_unchanged)
+  return `${projects}; ${written} y ${unchanged}.`
+}

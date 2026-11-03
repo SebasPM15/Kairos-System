@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import type { ExportSummary } from '@/lib/types'
-import { errorMessage, formatCount } from '@/lib/labels'
+import { TOAST, errorMessage, exportSummaryText } from '@/lib/labels'
+import { toast } from '@/components/ui/toaster'
 import * as api from '@/lib/api'
 
 export interface ExportDialogProps {
@@ -25,7 +26,7 @@ function ExportResult({ result }: { result: Result }) {
   if (result.state !== 'done') return null
   const { summary } = result
   return <div className="export-result" role="status">
-    <p><strong>Exportación lista.</strong> {formatCount('projectExported', summary.projects_exported)}; {formatCount('fileWritten', summary.files_written)} y {formatCount('fileUnchanged', summary.files_unchanged)}.</p>
+    <p><strong>{TOAST.exportDone}.</strong> {exportSummaryText(summary)}</p>
     {summary.orphans.length > 0 && <p>Carpetas en el vault sin proyecto (no se tocaron): {summary.orphans.join(', ')}.</p>}
   </div>
 }
@@ -37,7 +38,9 @@ function ExportBody({ onRunningChange }: { onRunningChange: (running: boolean) =
   const run = async () => {
     setResult({ state: 'running' }); onRunningChange(true)
     try {
-      setResult({ state: 'done', summary: await api.vault.export() })
+      const summary = await api.vault.export()
+      setResult({ state: 'done', summary })
+      toast.success(TOAST.exportDone, exportSummaryText(summary))
     } catch (error) {
       setResult({ state: 'error', message: errorMessage(error) })
     } finally { onRunningChange(false) }

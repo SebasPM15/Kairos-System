@@ -2,7 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Project, ProjectCreate } from '@/lib/types'
-import { errorMessage } from '@/lib/labels'
+import { TOAST, errorMessage } from '@/lib/labels'
+import { toast } from '@/components/ui/toaster'
 import * as api from '@/lib/api'
 
 export type View = 'projects' | 'ideas' | 'bot'
@@ -97,6 +98,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       ? { state: 'ready', projects: [...current.projects, project] }
       : current)
     setCreating(false)
+    toast.success(TOAST.projectCreated, project.name)
   }
 
   const updateProject = (project: Project) => {

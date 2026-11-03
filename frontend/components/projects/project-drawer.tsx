@@ -7,7 +7,8 @@ import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { PROJECT_STATUSES, type Decision, type DecisionCreate, type Idea, type Milestone, type Project, type ProjectStatus, type ProjectUpdate } from '@/lib/types'
-import { errorMessage, fieldErrors, statusLabel } from '@/lib/labels'
+import { TOAST, errorMessage, fieldErrors, statusLabel } from '@/lib/labels'
+import { toast } from '@/components/ui/toaster'
 import * as api from '@/lib/api'
 import { DecisionList } from './decision-list'
 import { DecisionForm } from './decision-form'
@@ -65,11 +66,11 @@ export function ProjectDrawer({ project, open, maxActive, onClose, onUpdate, onE
   // The backend owns the percentage, so refresh the project after every toggle
   const toggle = async (milestone: Milestone) => { try { await api.milestones.update(milestone.id, { done: !milestone.done }); const [fresh, updated] = await Promise.all([api.milestones.list(project.id), api.projects.get(project.id)]); setMilestones(fresh); onUpdate(updated) } catch (error) { onError(error) } }
 
-  const addMilestone = async (title: string) => { await api.milestones.create(project.id, title); const [fresh, updated] = await Promise.all([api.milestones.list(project.id), api.projects.get(project.id)]); setMilestones(fresh); onUpdate(updated) }
+  const addMilestone = async (title: string) => { await api.milestones.create(project.id, title); const [fresh, updated] = await Promise.all([api.milestones.list(project.id), api.projects.get(project.id)]); setMilestones(fresh); onUpdate(updated); toast.success(TOAST.milestoneAdded) }
 
-  const addIdea = async (content: string) => { await api.ideas.createInProject(project.id, content); setIdeas(await api.ideas.listByProject(project.id)); onUpdate(await api.projects.get(project.id)) }
+  const addIdea = async (content: string) => { await api.ideas.createInProject(project.id, content); setIdeas(await api.ideas.listByProject(project.id)); onUpdate(await api.projects.get(project.id)); toast.success(TOAST.ideaAdded) }
 
-  const addDecision = async (data: DecisionCreate) => { await api.decisions.create(project.id, data); setDecisions(await api.decisions.listByProject(project.id)); onUpdate(await api.projects.get(project.id)) }
+  const addDecision = async (data: DecisionCreate) => { await api.decisions.create(project.id, data); setDecisions(await api.decisions.listByProject(project.id)); onUpdate(await api.projects.get(project.id)); toast.success(TOAST.decisionAdded) }
 
   return <Dialog open={open} onOpenChange={(next) => { if (!next) onClose() }}><DialogContent variant="side" eyebrow="Detalle del proyecto" title={project.name}>
     <div className="drawer-tabs">{TABS.map(([value, label]) => <button key={value} className={tab === value ? 'selected' : ''} onClick={() => setTab(value)}>{label}</button>)}</div>
