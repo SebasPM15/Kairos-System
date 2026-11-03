@@ -27,8 +27,7 @@ const PAIRS = [
   ...['focus-text', 'focus-number', 'foreground'].flatMap((fg) => text(fg, ['focus-from'])),
   ...['focus-text', 'focus-number'].flatMap((fg) => text(fg, ['card'])),
   ...text('primary-foreground', ['accent-text'], UI), // checkmark on its fill
-  ...text('accent-text', ['card', 'background'], UI), // checked fill, active underline, ring
-  ...text('accent-text', ['soft'], UI), // progress fill on its track
+  ...text('accent-text', ['background', 'card', 'soft'], UI), // focus ring, checked fill, active underline, progress fill
   ...badge('accent-text', 'accent-text', 0.11, ['card', 'focus-from']),
   ...badge('warm', 'warm', 0.1, ['card']),
   ...badge('blue', 'blue', 0.1, ['card']),
