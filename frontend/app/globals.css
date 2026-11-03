@@ -23,9 +23,9 @@
   --color-ring: var(--accent-text);
 }
 
-:root { --background: #0d0f12; --foreground: #f1f3f5; --card: #15181d; --muted: #8e959f; --line: #272c33; --accent: #d8f56a; --soft: #1c2128; --warm: #f0b765; --danger: #ed817d; --blue: #9ec5ff; --radius: 12px; --primary: #d8f56a; --primary-foreground: #0d0f12; --destructive: #ed817d; --accent-text: #d8f56a; --line-strong: #6b7480; --text-soft: #d4dfd8; --focus-from: #1b2424; --focus-border: #34413b; --focus-text: #b4c1b7; --focus-number: #8ea196; --done-text: #949aa4; color-scheme: dark; }
+:root { --background: #0d0f12; --foreground: #f1f3f5; --card: #15181d; --muted: #8e959f; --line: #272c33; --accent: #d8f56a; --soft: #1c2128; --warm: #f0b765; --danger: #ed817d; --blue: #9ec5ff; --radius: 12px; --primary: #d8f56a; --primary-foreground: #0d0f12; --destructive: #ed817d; --accent-text: #d8f56a; --line-strong: #6b7480; --text-soft: #d4dfd8; --focus-from: #1b2424; --focus-border: #34413b; --focus-text: #b4c1b7; --focus-number: #8ea196; --done-text: #949aa4; --ring-halo: color-mix(in srgb, var(--accent-text) 50%, transparent); color-scheme: dark; }
 .light.dashboard { background: var(--background); }
-.light { --background: #f5f6f2; --foreground: #1b201d; --card: #ffffff; --muted: #5c655f; --line: #dce2db; --soft: #edf1eb; --primary: #1b201d; --primary-foreground: #f5f6f2; --destructive: #b3302b; --accent-text: #4f6a00; --warm: #8a5200; --danger: #b3302b; --blue: #1d5fb8; --line-strong: #778279; --text-soft: #3f4842; --focus-from: #edf3e1; --focus-border: #c9d6b8; --focus-text: #444e47; --focus-number: #566259; --done-text: #5c655f; color-scheme: light; }
+.light { --background: #f5f6f2; --foreground: #1b201d; --card: #ffffff; --muted: #5c655f; --line: #dce2db; --soft: #edf1eb; --primary: #1b201d; --primary-foreground: #f5f6f2; --destructive: #b3302b; --accent-text: #4f6a00; --warm: #8a5200; --danger: #b3302b; --blue: #1d5fb8; --line-strong: #778279; --text-soft: #3f4842; --focus-from: #edf3e1; --focus-border: #c9d6b8; --focus-text: #444e47; --focus-number: #566259; --done-text: #5c655f; --ring-halo: color-mix(in srgb, var(--accent-text) 75%, transparent); color-scheme: light; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--background); color: var(--foreground); font-family: Arial, Helvetica, sans-serif; }
 button, input, select { font: inherit; }

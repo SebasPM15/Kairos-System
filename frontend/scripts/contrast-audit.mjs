@@ -10,8 +10,14 @@ function tokens(selector) {
   const body = start < 0 ? '' : css.slice(css.indexOf('{', start) + 1, css.indexOf('}', start))
   return Object.fromEntries([...body.matchAll(/--([\w-]+):\s*(#[0-9a-fA-F]{6})/g)].map(([, k, v]) => [k, v]))
 }
-const dark = tokens(':root')
-const THEMES = { dark, light: { ...dark, ...tokens('.light') } }
+// The Button ring is --accent-text at the opacity declared in --ring-halo, composited over the page
+function ringAlpha(selector) {
+  const start = css.indexOf(selector + ' {')
+  const match = css.slice(start, css.indexOf('}', start)).match(/--ring-halo:[^;]*?(\d+)%/)
+  return match ? Number(match[1]) / 100 : 1
+}
+const dark = { ...tokens(':root'), ringAlpha: ringAlpha(':root') }
+const THEMES = { dark, light: { ...dark, ...tokens('.light'), ringAlpha: ringAlpha('.light') } }
 
 // A color is a token name or { mix: token, alpha, over: token } (translucent tint over a background)
 // Thresholds: 4.5 text, 3 UI and large text
@@ -32,6 +38,8 @@ const PAIRS = [
   ...badge('warm', 'warm', 0.1, ['card']),
   ...badge('blue', 'blue', 0.1, ['card']),
   ...badge('done-text', 'foreground', 0.07, ['card', 'soft', 'focus-from']),
+  // Button ring (ring-[var(--ring-halo)]) over the surface it sits on
+  ...['background', 'card', 'soft'].map((over) => ({ fg: { mix: 'accent-text', alpha: 'ring', over }, bg: over, min: UI })),
 ]
 
 // Known failures that are intentional; each needs the reason it is acceptable
@@ -46,9 +54,10 @@ const hex = (c) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0'
 function resolve(theme, color) {
   if (typeof color === 'string') return theme[color]
   const top = rgb(theme[color.mix]), under = rgb(theme[color.over])
-  return hex(top.map((v, i) => v * color.alpha + under[i] * (1 - color.alpha)))
+  const alpha = color.alpha === 'ring' ? theme.ringAlpha : color.alpha
+  return hex(top.map((v, i) => v * alpha + under[i] * (1 - alpha)))
 }
-const label = (c) => (typeof c === 'string' ? c : `${c.mix} ${Math.round(c.alpha * 100)}% on ${c.over}`)
+const label = (c) => (typeof c === 'string' ? c : `${c.mix} ${c.alpha === 'ring' ? 'ring' : Math.round(c.alpha * 100) + '%'} on ${c.over}`)
 
 let failures = 0
 for (const [name, theme] of Object.entries(THEMES)) {
