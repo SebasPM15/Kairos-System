@@ -67,7 +67,7 @@ input[aria-invalid="true"] { border-color: var(--danger); }
 .command-table td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .command-table code { font: 12px monospace; color: var(--accent-text); }
 .export-icon { display: none; }
-select { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.sort select { max-width: 16rem; }.idea-meta select { min-width: 0; }
+select { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.sort select { max-width: 11rem; }.idea-meta select { min-width: 0; }
 /* Mobile: stacked header (brand + actions, then nav), 44px touch targets and 16px fields so iOS does not zoom */
 @media (max-width: 760px) {
   .header { display: grid; grid-template-columns: auto 1fr; height: auto; padding: 8px 18px 0; }
