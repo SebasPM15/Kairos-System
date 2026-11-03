@@ -22,6 +22,7 @@ docker compose logs -f
 pnpm install
 pnpm dev
 pnpm build
+pnpm contrast                            # auditoría WCAG de los tokens; correr al cambiar cualquier color en globals.css
 ```
 
 Copiar `.env.example` a `.env` y completar. El `.env` nunca se commitea.
