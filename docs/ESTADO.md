@@ -1,6 +1,6 @@
 # Estado
 
-_Última actualización: 2026-10-29 (endurecimiento del hito 10)_
+_Última actualización: 2026-11-03 (hito 11, paso 1: tokens y tema claro)_
 
 ## Hecho
 - Esqueleto del backend (carpetas, `__init__.py`, `pyproject.toml` mínimo) y `.env.example`.
@@ -20,6 +20,7 @@ _Última actualización: 2026-10-29 (endurecimiento del hito 10)_
 - Catálogo único de comandos del bot: `app/bot/catalog.py` alimenta `/ayuda` y `/start`, el menú de Telegram (`set_my_commands` al arrancar; si falla solo se registra el nombre de la excepción) y `GET /bot/commands`. 323 tests pasan, sin red (nuevos en `test_bot_catalog.py`); ningún test existente cambió salvo que el bot falso de `test_bot_lifecycle.py` ahora define `set_my_commands`. Menú **no probado contra Telegram real**.
 - Hito 10, sesión 1 (dashboard conectado, limpieza): `frontend/lib/types.ts` (tipos en inglés iguales a la API), `lib/labels.ts` (único mapa de estados al español y `errorMessage`), `lib/api.ts` (fetch nativo, `NEXT_PUBLIC_API_URL`, funciones por recurso y `ApiError` con `status`/`detail`; 0 = sin conexión, 409 = límite de activos, 422 = validación). El dashboard lista proyectos reales con skeleton, error con "Reintentar" y estado vacío; los hitos se cargan al abrir el detalle; el progreso y los días sin tocar vienen del backend. Sin `window.confirm`: el 409/422 se muestra como aviso con el mensaje en español. Quitados `@vercel/analytics`, `ignoreBuildErrors`, `generator: v0.app`, placeholders e iconos de V0; marca Kairos. `pnpm lint` (ESLint + `eslint-config-next`), `pnpm typecheck` y `pnpm build` en verde. CORS ya existía (`cors_origins`); añadido `tests/test_cors.py` y `CORS_ORIGINS` en `.env.example`. 326 tests pasan, sin red. Verificado a mano con backend temporal (`MAX_ACTIVE_PROJECTS=1`): 422 al activar sin acción, 409 al superar el límite y preflight CORS desde `localhost:3000`; el HTML servido por Next incluye el skeleton. **Los estados de error y el aviso del 409 no se vieron en un navegador** (solo la API y el SSR).
 - Hito 10, sesión 3 (bandeja, export y pestaña Bot): `GET /ideas/all` (todas las ideas del usuario, `created_at` descendente; 331 tests pasan, 1 omitido a propósito). Frontend: navegación Proyectos / Ideas / Bot sin router ni librería de estado (`view` en `project-dashboard.tsx`); `components/ideas/` (vista global con filtro por proyecto o sin proyecto, alta en la bandeja, asignar/desasignar, borrar con `AlertDialog`), alta de ideas en el drawer, `components/export/export-panel.tsx` (resumen y errores en el panel) y `components/bot/bot-commands.tsx` (tabla desde `GET /bot/commands`, sin duplicar el catálogo). Cierre de la sesión 2: sin rastro del paquete `cn`; etiqueta de estado ya no se estira; formularios de alta probados en navegador. `pnpm lint`, `typecheck` y `build` en verde. **Hito 10 completo.**
+- Hito 11, paso 1 (tokens y tema claro, solo `frontend/app/globals.css`): el tema claro heredaba accent, warm, danger y blue del oscuro y casi no se leía. Tokens nuevos `--accent-text`, `--line-strong`, `--text-soft`, `--focus-from|border|text|number`; el claro tiene sus propios `--warm` (#8a5200), `--danger`, `--blue`, `--muted` y `--destructive`. `--accent` (lima) no cambia y el oscuro se ve igual. Los usos de lima como texto, borde, icono o relleno pasan a `--accent-text`, los hex fijos de las tarjetas en foco, el checkmark y los bordes de controles pasan a tokens, y las tintas de `.status-*` salen de `color-mix` con los alfas anteriores. Todos los pares de texto cumplen 4.5:1 y los de UI 3:1 en ambos temas, salvo la insignia «terminado» en oscuro sobre `--soft` y sobre la tarjeta en foco (4.4 y 4.3, respectivamente), combinaciones que no existen en la UI. Comprobado en navegador contra la demo. Header: el nav ya no se mueve entre Proyectos, Ideas y Bot (flex con `margin-left` en el nav y `margin-left: auto` en las acciones; el grid 1fr/auto/1fr se descartó porque a 1024 y 768 px el nav se movía). Medido con el bounding box a 1280, 1024, 768 y 390 px: idéntico en las tres vistas.
 - Documentos base: CLAUDE.md, ROADMAP, architecture.
 
 - `.claude/settings.json` sin coautoría de Claude; commits locales reescritos para quitarla (aún no estaban en el remoto).
@@ -33,6 +34,8 @@ _Última actualización: 2026-10-29 (endurecimiento del hito 10)_
   2. ~~Proyectos~~ (hecho, ver "Cierre de la sesión 2").
   3. ~~Bandeja, export y pestaña "Bot"~~ (hecho, ver "Cierre de la sesión 3").
 - Probar `/exportar` y abrir el vault real en Obsidian (hasta ahora solo probado con `vault-dev`).
+
+- Header a 390 px: no se apila, desborda en horizontal (scrollWidth 720 px en Proyectos, 495 en Ideas y Bot; ya desbordaba antes del cambio del nav). Pendiente para el paso de responsive del hito 11.
 
 ## Bloqueos
 - Ninguno.
