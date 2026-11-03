@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
-import { THEME_SCRIPT } from '@/lib/theme'
+import { PREFS_SCRIPT } from '@/lib/prefs'
 
 export const metadata: Metadata = {
   title: 'Kairos — Seguimiento de proyectos',
@@ -26,7 +26,7 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: PREFS_SCRIPT }} />
       </head>
       <body className="antialiased">
         {children}

@@ -152,3 +152,6 @@ select { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space
 .toast-close:hover { color: var(--foreground); }
 .toast-close svg { width: 16px; height: 16px; }
 @media (max-width: 760px) { .toast-viewport { left: 16px; width: auto; } }
+/* ui/tooltip */
+.tooltip { z-index: 50; max-width: 240px; padding: 6px 10px; color: var(--background); background: var(--foreground); border-radius: 6px; font-size: 12px; line-height: 1.3; overflow-wrap: anywhere; transition: opacity .15s ease; }
+.tooltip[data-starting-style], .tooltip[data-ending-style] { opacity: 0; }

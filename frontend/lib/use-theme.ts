@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useSyncExternalStore } from 'react'
-import { THEME_KEY, type Theme } from './theme'
+import { THEME_KEY, type Theme } from './prefs'
 
 // The class on <html> is the single source of truth; the inline script sets it before hydration
 function subscribe(onChange: () => void) {
