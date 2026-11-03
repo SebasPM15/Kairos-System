@@ -1,29 +1,15 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
-import Link from 'next/link'
-import { Moon, Plus, Sun, Upload } from 'lucide-react'
+import { Plus, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { pluralLabel } from '@/lib/labels'
 import type { Project } from '@/lib/types'
-import { useTheme } from '@/lib/use-theme'
 import { ExportDialog } from '@/components/export/export-dialog'
 import { ProjectDrawer } from '@/components/projects/project-drawer'
-import { ROUTES, useDashboard, type View } from './dashboard-context'
+import { useDashboard } from './dashboard-context'
+import { Sidebar } from './sidebar'
 import { CreateProjectDialog } from './create-project-dialog'
-
-const VIEWS: [View, string][] = [['projects', 'Proyectos'], ['ideas', 'Ideas'], ['bot', 'Bot']]
-
-function MainNav() {
-  const { view } = useDashboard()
-  return <nav className="main-nav" aria-label="Secciones">
-    {VIEWS.map(([value, label]) => <Link
-      key={value}
-      href={ROUTES[value]}
-      aria-current={view === value ? 'page' : undefined}
-    >{label}</Link>)}
-  </nav>
-}
 
 function ProjectActions() {
   const { load, view, maxActive, activeCount, setCreating } = useDashboard()
@@ -39,15 +25,11 @@ function ProjectActions() {
 
 function HeaderActions() {
   const { exporting, setExporting } = useDashboard()
-  const { theme, setTheme } = useTheme()
   return <div className="header-actions">
     <Button variant="outline" size="sm" onClick={() => setExporting(!exporting)} aria-expanded={exporting}>
       <Upload className="export-icon" /><span className="btn-label">Exportar a Obsidian</span>
     </Button>
     <ProjectActions />
-    <Button variant="ghost" size="icon" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} aria-label="Cambiar tema">
-      {theme === 'light' ? <Moon /> : <Sun />}
-    </Button>
   </div>
 }
 
@@ -69,20 +51,20 @@ function SelectedProjectDrawer() {
   />
 }
 
-// Header, project drawer and the creation and export dialogs; the current view is passed as children
+// Sidebar, header with the actions, the page, the project drawer and the creation and export dialogs
 export function AppShell({ children }: { children: ReactNode }) {
   const { exporting, setExporting } = useDashboard()
-  return <main className="dashboard">
-    <header className="header">
-      <div className="brand"><div className="brand-mark">●</div><span>Kairos</span></div>
-      <MainNav />
-      <HeaderActions />
-    </header>
-    <div className="container">
-      {children}
+  return <div className="dashboard">
+    <a className="skip-link" href="#contenido">Saltar al contenido</a>
+    <Sidebar />
+    <div className="dashboard-main">
+      <header className="header"><HeaderActions /></header>
+      <main id="contenido" tabIndex={-1}>
+        <div className="container">{children}</div>
+      </main>
     </div>
     <SelectedProjectDrawer />
     <CreateProjectDialog />
     <ExportDialog open={exporting} onOpenChange={setExporting} />
-  </main>
+  </div>
 }

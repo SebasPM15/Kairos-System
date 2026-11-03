@@ -34,6 +34,8 @@ const PAIRS = [
   ...['focus-text', 'focus-number'].flatMap((fg) => text(fg, ['card'])),
   ...text('primary-foreground', ['accent-text'], UI), // checkmark on its fill
   ...text('background', ['foreground']), // tooltip: inverted text
+  ...text('foreground', ['card', 'soft']), // sidebar item, active and hovered
+  ...text('primary-foreground', ['primary']), // skip link
   ...text('accent-text', ['background', 'card', 'soft'], UI), // focus ring, checked fill, active underline, progress fill
   ...badge('accent-text', 'accent-text', 0.11, ['card', 'focus-from']),
   ...badge('warm', 'warm', 0.1, ['card']),
