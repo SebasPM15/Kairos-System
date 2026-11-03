@@ -15,15 +15,17 @@
 
 ## Hitos 11 y 12 — pulido del dashboard (antes de v0.2)
 
-11. [ ] (siguiente) **Shell y sistema de diseño**
-    - Tokens de diseño y tema claro con contraste WCAG AA.
-    - Header estable: las tabs no se mueven entre Proyectos, Ideas y Bot aunque cambien las acciones de cada vista.
-    - Sidebar lateral colapsable, con el estado recordado y una zona de usuario placeholder.
-    - Modales para "Nuevo proyecto" y "Exportar a Obsidian".
-    - Toasts y banners.
+11. [x] **Shell y sistema de diseño**
+    - Tokens de diseño y tema claro con contraste WCAG AA (`pnpm contrast` audita los pares).
+    - Header estable: la navegación no se mueve entre Proyectos, Ideas y Bot.
+    - Sidebar lateral colapsable (estado recordado, zona de usuario placeholder) y menú off-canvas en móvil.
+    - Modales para "Nuevo proyecto" y "Exportar a Obsidian"; el drawer del proyecto es un Dialog lateral.
+    - Toasts para confirmaciones efímeras y errores accionables en línea.
     - Animaciones solo con `transform` y `opacity`, y respetando `prefers-reduced-motion`.
-    - Corregir la pluralización ("1 días").
-12. [ ] **Métricas**
+    - Pluralización correcta (`formatCount` / `pluralLabel`).
+    - Rutas reales (`/proyectos`, `/ideas`, `/bot`) y tema persistido en `<html>`.
+    - Controles y formularios con componentes propios sobre `@base-ui/react` (Field, Input, Textarea, Select, SearchInput, Checkbox, Button con estado de carga) y anillo de foco consistente.
+12. [ ] (siguiente) **Métricas**
     - Sección con proyectos por estado, avance por proyecto, hitos completados por semana e ideas capturadas vs. promovidas.
     - Evaluar `GET /metrics`: agregados calculados en el backend (router -> service -> repository), sin recalcular nada en el cliente.
 
@@ -32,11 +34,11 @@
 - SEO básico: metadata, `lang` y título por vista.
 - Auth cuando toque: `get_current_user` es el único punto a reemplazar.
 
-**Dependencias a justificar antes de instalar**: `sonner` (toasts), `next-intl` (i18n) y `recharts` (gráficos de métricas). Ninguna se añade sin justificarla antes.
+**Dependencias a justificar antes de instalar**: `next-intl` (i18n) y `recharts` (gráficos de métricas). Ninguna se añade sin justificarla antes. (`sonner` quedó descartado: los toasts usan `@base-ui/react/toast`.)
 
 ## Después
 
-- **v0.2** — Recordatorios y alertas de proyectos sin avance.
+- **v0.2** — Recordatorios y alertas de proyectos sin avance. Incluye un endpoint de estado del bot para mostrar un banner de «bot caído» (hoy el backend no expone si el bot arrancó).
 - **v0.3** — Capa de IA: clasificar ideas por proyecto, proponer hitos, resumen semanal (el usuario confirma).
 - **v0.4** — Búsqueda semántica con embeddings.
 - **v1.0** — Agentes especializados con un orquestador.

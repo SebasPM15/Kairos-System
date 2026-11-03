@@ -123,6 +123,15 @@ Todo en español; cada archivo lleva al inicio el aviso "Generado por Kairos des
 
 **Respuesta** de `POST /export`: `{projects_exported, files_written, files_unchanged, orphans}`.
 
+## Frontend
+
+Next.js (App Router) con `@base-ui/react` para modales, toasts, tooltips y campos; estilos en `app/globals.css` con tokens CSS (`--accent-text`, `--line-strong`, `--ring-halo`...). `pnpm contrast` audita los pares de color de ambos temas.
+
+- **Rutas**: `/` redirige a `/proyectos`; `/proyectos`, `/ideas` y `/bot` viven en el grupo `app/(app)/`. Su layout monta una sola vez `DashboardProvider` (proyectos, `/config`, filtros, búsqueda, selección del drawer, diálogos de crear y exportar), `AppShell` (sidebar, header con las acciones, `main#contenido`, drawer y diálogos) y `Toaster`. La vista activa se deriva de la URL, así que los datos, el texto del buscador y los filtros sobreviven a la navegación; el drawer se cierra al cambiar de ruta.
+- **Tema**: la clase `light` o `dark` va en `<html>`. Un script inline en `<head>` (`lib/prefs.ts`) la fija antes del primer pintado leyendo `localStorage['kairos-theme']` (por defecto oscuro, sin mirar `prefers-color-scheme`); `useTheme` la lee y la escribe, y si el almacenamiento falla todo sigue en oscuro.
+- **Sidebar**: 220 px expandida y 64 px colapsada; por defecto expandida desde 1200 px y colapsada entre 761 y 1199 px. La elección del usuario (`localStorage['kairos-sidebar']`: `expanded` | `collapsed`) llega como `data-sidebar` en `<html>` desde el mismo script y el CSS la lee. A 760 px o menos el sidebar se oculta y se abre desde una hamburguesa en un Dialog lateral izquierdo.
+- **Modales**: `components/ui/dialog.tsx` con variantes `modal` y `side` (derecha para el drawer del proyecto, izquierda para el menú móvil); pantalla completa a 760 px o menos. Los toasts (`ui/toaster.tsx`) son solo para confirmaciones efímeras; lo que exige acción del usuario va en línea.
+
 ## Endpoints
 
 | método | ruta | descripción |

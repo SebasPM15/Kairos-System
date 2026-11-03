@@ -57,6 +57,8 @@ Copiar `.env.example` a `.env` y completar. El `.env` nunca se commitea.
 - En tareas de diseño/UI, usar los skills de diseño que existan en `~/.claude/skills` (p. ej. `impeccable`, `ui-ux-pro-max`, `design-system`, `ui-styling`) y comprobar el resultado en navegador; los skills de marketing no aplican.
 - Todo cambio de UI se verifica a 390/768/1024/1280 px sin scroll horizontal, en ambos temas, y con nombres de 120 caracteres (con y sin espacios).
 - Si el usuario debe actuar, no es un toast. Los toasts son efímeros, confirman algo ya hecho y nunca llevan la única vía para resolver un problema.
+- El tema (clase `light` / `dark`) vive en `<html>`, nunca en un contenedor; los portales (Dialog, Toaster, AlertDialog) van a `body` y lo heredan. Las preferencias (`kairos-theme`, `kairos-sidebar`) se leen en un script inline del `<head>` y se guardan siempre dentro de `try/catch`.
+- Las páginas del dashboard viven bajo `frontend/app/(app)/`, cuyo layout monta `DashboardProvider`, `AppShell` y `Toaster` una sola vez.
 - Decisiones cerradas (no cambiar sin pedirlo): BD fuente de verdad, vault unidireccional, `MAX_ACTIVE_PROJECTS=3`, estados en inglés en BD/API, porcentaje calculado en el backend.
 
 ## Regla de sesión
