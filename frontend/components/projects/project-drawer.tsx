@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
@@ -18,6 +18,7 @@ import { MilestoneList } from './milestone-list'
 
 export interface ProjectDrawerProps {
   project: Project
+  open: boolean
   onClose: () => void
   onUpdate: (project: Project) => void
   // Real limit from /config; undefined until it loads
@@ -29,7 +30,7 @@ export interface ProjectDrawerProps {
 type Tab = 'detalles' | 'ideas' | 'decisiones'
 const TABS: [Tab, string][] = [['detalles', 'Detalles'], ['ideas', 'Ideas'], ['decisiones', 'Decisiones']]
 
-export function ProjectDrawer({ project, maxActive, onClose, onUpdate, onError }: ProjectDrawerProps) {
+export function ProjectDrawer({ project, open, maxActive, onClose, onUpdate, onError }: ProjectDrawerProps) {
   const [tab, setTab] = useState<Tab>('detalles')
   const [action, setAction] = useState(project.next_action ?? '')
   const [milestones, setMilestones] = useState<Milestone[] | null>(null)
@@ -70,10 +71,10 @@ export function ProjectDrawer({ project, maxActive, onClose, onUpdate, onError }
 
   const addDecision = async (data: DecisionCreate) => { await api.decisions.create(project.id, data); setDecisions(await api.decisions.listByProject(project.id)); onUpdate(await api.projects.get(project.id)) }
 
-  return <aside className="drawer" aria-label={`Detalles de ${project.name}`}><div className="drawer-head"><div><p className="eyebrow">Detalle del proyecto</p><h2>{project.name}</h2></div><Button variant="ghost" size="icon" onClick={onClose} aria-label="Cerrar"><X /></Button></div>
+  return <Dialog open={open} onOpenChange={(next) => { if (!next) onClose() }}><DialogContent variant="side" eyebrow="Detalle del proyecto" title={project.name}>
     <div className="drawer-tabs">{TABS.map(([value, label]) => <button key={value} className={tab === value ? 'selected' : ''} onClick={() => setTab(value)}>{label}</button>)}</div>
     {tab === 'detalles' && <div className="drawer-content"><p className="drawer-description">{project.description}</p><label className="field-label" htmlFor="status">Estado</label><Select id="status" value={project.status} onChange={(e) => updateStatus(e.target.value as ProjectStatus)}>{PROJECT_STATUSES.map((value) => <option key={value} value={value}>{statusLabel[value]}</option>)}</Select>{statusError && <p className="field-error" role="alert">{statusError}</p>}<Field label="Próxima acción" error={actionError}><div className="action-input"><Input value={action} onChange={(e) => setAction(e.target.value)} onBlur={saveAction} placeholder="¿Cuál es el siguiente paso?" /><Button size="sm" onClick={saveAction}>Guardar</Button></div></Field><div className="section-title"><span>Hitos</span><span>{project.progress}%</span></div><div className="milestones"><MilestoneList milestones={milestones} onToggle={toggle} /></div><MilestoneForm onSubmit={addMilestone} onError={onError} /></div>}
     {tab === 'ideas' && <div className="drawer-content"><IdeaForm onSubmit={addIdea} onError={onError} autoFocus /><IdeaList ideas={ideas} /></div>}
     {tab === 'decisiones' && <div className="drawer-content"><DecisionForm onSubmit={addDecision} onError={onError} /><DecisionList decisions={decisions} /></div>}
-  </aside>
+  </DialogContent></Dialog>
 }

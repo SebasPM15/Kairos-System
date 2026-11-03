@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react'
 import { Moon, Plus, Sun, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { pluralLabel } from '@/lib/labels'
+import type { Project } from '@/lib/types'
 import { ExportDialog } from '@/components/export/export-dialog'
 import { ProjectDrawer } from '@/components/projects/project-drawer'
 import { useDashboard, type View } from './dashboard-context'
@@ -51,18 +52,20 @@ function HeaderActions({ light, onToggleTheme }: { light: boolean; onToggleTheme
 
 function SelectedProjectDrawer() {
   const { selected, maxActive, setSelectedId, updateProject, showError } = useDashboard()
-  if (!selected) return null
-  return <>
-    <div className="drawer-backdrop" onClick={() => setSelectedId(null)} />
-    <ProjectDrawer
-      key={selected.id}
-      project={selected}
-      maxActive={maxActive ?? undefined}
-      onClose={() => setSelectedId(null)}
-      onUpdate={updateProject}
-      onError={showError}
-    />
-  </>
+  // Keep the last project mounted while the panel slides out
+  const [last, setLast] = useState<Project | null>(null)
+  if (selected && selected !== last) setLast(selected)
+  const project = selected ?? last
+  if (!project) return null
+  return <ProjectDrawer
+    key={project.id}
+    project={project}
+    open={selected !== null}
+    maxActive={maxActive ?? undefined}
+    onClose={() => setSelectedId(null)}
+    onUpdate={updateProject}
+    onError={showError}
+  />
 }
 
 // Header, notices, export panel and the project drawer; the current view is passed as children
