@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Select } from '@/components/ui/select'
 import type { Idea, Project } from '@/lib/types'
 import { errorMessage } from '@/lib/labels'
 import { formatDate } from '@/lib/format'
@@ -64,14 +65,14 @@ export function IdeasView({ projects, onProjectsChanged, onError }: IdeasViewPro
   const visible = ideas.filter((idea) => filter === ALL || (filter === INBOX ? idea.project_id === null : idea.project_id === Number(filter)))
 
   return <section className="projects-section"><div className="section-heading"><div><p className="eyebrow">Todo lo que se te ocurre</p><h2>Ideas</h2></div>
-    <label className="sort">Mostrar <select value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Filtrar ideas"><option value={ALL}>Todas</option><option value={INBOX}>Sin proyecto</option>{projects.map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}</select></label></div>
+    <label className="sort">Mostrar <Select value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Filtrar ideas"><option value={ALL}>Todas</option><option value={INBOX}>Sin proyecto</option>{projects.map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}</Select></label></div>
     <p className="drawer-description">Las ideas nuevas van a la bandeja, sin proyecto. Después puedes asignarlas a uno.</p>
     <IdeaForm onSubmit={add} onError={onError} placeholder="Nueva idea para la bandeja" />
     {load.state === 'loading' && <div className="entries mt-4" aria-busy="true" aria-label="Cargando ideas">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-[62px] rounded-[8px]" />)}</div>}
     {load.state === 'error' && <div className="state-panel" role="alert"><h3>No pudimos cargar tus ideas</h3><p>{load.message}</p><Button variant="outline" onClick={retry}>Reintentar</Button></div>}
     {load.state === 'ready' && ideas.length === 0 && <div className="state-panel"><h3>Aún no tienes ideas</h3><p>Anótalas aquí o con /idea en el bot de Telegram.</p></div>}
     {load.state === 'ready' && ideas.length > 0 && visible.length === 0 && <div className="state-panel"><h3>No hay ideas con este filtro</h3><p>Prueba con otro proyecto o con «Todas».</p></div>}
-    {visible.length > 0 && <ul className="entries mt-4">{visible.map((idea) => <li key={idea.id}><p>{idea.content}</p><div className="idea-meta"><span className={idea.project_id === null ? 'idea-tag inbox' : 'idea-tag'}>{projectName(idea.project_id)}</span><time dateTime={idea.created_at}>{formatDate(idea.created_at)}</time><select value={idea.project_id === null ? INBOX : String(idea.project_id)} onChange={(e) => assign(idea, e.target.value)} aria-label={`Proyecto de la idea ${idea.id}`}><option value={INBOX}>{INBOX_LABEL}</option>{projects.map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}</select><Button variant="ghost" size="sm" onClick={() => setPendingDelete(idea)} aria-label={`Borrar la idea ${idea.id}`}>Borrar</Button></div></li>)}</ul>}
+    {visible.length > 0 && <ul className="entries mt-4">{visible.map((idea) => <li key={idea.id}><p>{idea.content}</p><div className="idea-meta"><span className={idea.project_id === null ? 'idea-tag inbox' : 'idea-tag'}>{projectName(idea.project_id)}</span><time dateTime={idea.created_at}>{formatDate(idea.created_at)}</time><Select value={idea.project_id === null ? INBOX : String(idea.project_id)} onChange={(e) => assign(idea, e.target.value)} aria-label={`Proyecto de la idea ${idea.id}`}><option value={INBOX}>{INBOX_LABEL}</option>{projects.map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}</Select><Button variant="ghost" size="sm" onClick={() => setPendingDelete(idea)} aria-label={`Borrar la idea ${idea.id}`}>Borrar</Button></div></li>)}</ul>}
     <DeleteIdeaDialog idea={pendingDelete} onCancel={() => setPendingDelete(null)} onConfirm={remove} />
   </section>
 }

@@ -1,4 +1,5 @@
-import { ChevronDown, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
+import { Select } from '@/components/ui/select'
 import { ProjectList } from '@/components/projects/project-list'
 import { useDashboard } from './dashboard-context'
 
@@ -28,10 +29,10 @@ export function ProjectsSection() {
           onClick={() => setFilter(value)}
         >{label}</button>)}
       </div>
-      <label className="sort">Ordenar por <select value={sort} onChange={(e) => setSort(e.target.value)}>
+      <label className="sort">Ordenar por <Select value={sort} onChange={(e) => setSort(e.target.value)}>
         <option value="touch">Días sin tocar</option>
         <option value="progress">Progreso</option>
-      </select><ChevronDown /></label>
+      </Select></label>
     </div>
     <ProjectList projects={visible} onOpen={setSelectedId} />
   </section>
