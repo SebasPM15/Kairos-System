@@ -1,4 +1,4 @@
-import { Search } from 'lucide-react'
+import { SearchInput } from '@/components/ui/search-input'
 import { Select } from '@/components/ui/select'
 import { ProjectList } from '@/components/projects/project-list'
 import { useDashboard } from './dashboard-context'
@@ -16,16 +16,14 @@ export function ProjectsSection() {
   return <section className="projects-section">
     <div className="section-heading">
       <div><p className="eyebrow">Vista general</p><h2>Todos tus proyectos</h2></div>
-      <div className="search">
-        <Search />
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar..." />
-      </div>
+      <SearchInput value={query} onValueChange={setQuery} label="Buscar proyectos" placeholder="Buscar..." />
     </div>
     <div className="toolbar">
       <div className="filters">
         {FILTER_LABELS.map(([value, label]) => <button
           key={value}
           className={filter === value ? 'active' : ''}
+          aria-pressed={filter === value}
           onClick={() => setFilter(value)}
         >{label}</button>)}
       </div>
@@ -34,6 +32,6 @@ export function ProjectsSection() {
         <option value="progress">Progreso</option>
       </Select></label>
     </div>
-    <ProjectList projects={visible} onOpen={setSelectedId} />
+    <ProjectList projects={visible} onOpen={setSelectedId} onClearSearch={query ? () => setQuery('') : undefined} />
   </section>
 }

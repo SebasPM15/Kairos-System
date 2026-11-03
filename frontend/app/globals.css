@@ -101,3 +101,8 @@ select { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space
 .sort .select { max-width: 11rem; }
 .idea-meta .select { margin-left: auto; }
 .drawer .select { display: flex; width: 100%; }
+/* ui/search-input */
+.search-clear { display: grid; place-items: center; flex: none; width: 22px; height: 22px; margin: -2px -4px -2px 0; padding: 0; color: var(--muted); background: none; border: 0; border-radius: 50%; }
+.search-clear:hover { color: var(--foreground); }
+.search-clear svg { width: 14px; height: 14px; }
+.no-results .btn, .no-results button { margin-top: 18px; }
