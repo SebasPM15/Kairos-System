@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import { THEME_SCRIPT } from '@/lib/theme'
 
 export const metadata: Metadata = {
   title: 'Kairos — Seguimiento de proyectos',
@@ -23,7 +24,10 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es" className="dark">
+    <html lang="es" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="antialiased">
         {children}
       </body>

@@ -24,7 +24,7 @@
 }
 
 :root { --background: #0d0f12; --foreground: #f1f3f5; --card: #15181d; --muted: #8e959f; --line: #272c33; --accent: #d8f56a; --soft: #1c2128; --warm: #f0b765; --danger: #ed817d; --blue: #9ec5ff; --radius: 12px; --primary: #d8f56a; --primary-foreground: #0d0f12; --destructive: #ed817d; --accent-text: #d8f56a; --line-strong: #6b7480; --text-soft: #d4dfd8; --focus-from: #1b2424; --focus-border: #34413b; --focus-text: #b4c1b7; --focus-number: #8ea196; --done-text: #949aa4; --ring-halo: color-mix(in srgb, var(--accent-text) 50%, transparent); color-scheme: dark; }
-.light.dashboard { background: var(--background); }
+.light .dashboard { background: var(--background); }
 .light { --background: #f5f6f2; --foreground: #1b201d; --card: #ffffff; --muted: #5c655f; --line: #dce2db; --soft: #edf1eb; --primary: #1b201d; --primary-foreground: #f5f6f2; --destructive: #b3302b; --accent-text: #4f6a00; --warm: #8a5200; --danger: #b3302b; --blue: #1d5fb8; --line-strong: #778279; --text-soft: #3f4842; --focus-from: #edf3e1; --focus-border: #c9d6b8; --focus-text: #444e47; --focus-number: #566259; --done-text: #5c655f; --ring-halo: color-mix(in srgb, var(--accent-text) 75%, transparent); color-scheme: light; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--background); color: var(--foreground); font-family: Arial, Helvetica, sans-serif; }
@@ -114,6 +114,8 @@ select { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space
 .dialog-popup[data-variant="modal"][data-starting-style], .dialog-popup[data-variant="modal"][data-ending-style] { opacity: 0; transform: scale(.98); }
 .dialog-popup[data-variant="side"] { width: min(470px, 100%); height: 100dvh; border-width: 0 0 0 1px; box-shadow: -20px 0 60px #0004; }
 .dialog-popup[data-variant="side"][data-starting-style], .dialog-popup[data-variant="side"][data-ending-style] { transform: translateX(100%); }
+/* The panel takes programmatic focus when it opens; it is not a control, so no ring on it */
+.dialog-popup:focus, .dialog-popup:focus-visible { outline: none; }
 .dialog-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: var(--dialog-pad) var(--dialog-pad) 0; }
 .dialog-head > div { min-width: 0; }
 .dialog-head button { flex: none; }

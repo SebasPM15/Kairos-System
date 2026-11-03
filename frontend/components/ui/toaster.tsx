@@ -3,7 +3,6 @@
 import type { ReactNode } from 'react'
 import { Toast } from '@base-ui/react/toast'
 import { X } from 'lucide-react'
-import { portalContainerRef } from '@/lib/portal-container'
 
 // Lets code outside React components (the dashboard context) raise toasts too
 const manager = Toast.createToastManager()
@@ -23,7 +22,7 @@ export const toast = {
 
 function ToastList() {
   const { toasts } = Toast.useToastManager()
-  return <Toast.Portal container={portalContainerRef}>
+  return <Toast.Portal>
     <Toast.Viewport className="toast-viewport" aria-label="Notificaciones">
       {toasts.map((item) => <Toast.Root key={item.id} toast={item} className="toast" data-type={item.type} role={item.type === 'error' ? 'alert' : undefined}>
         <Toast.Content className="toast-content">

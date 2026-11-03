@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import { portalContainer } from '@/lib/portal-container'
 import type { Idea } from '@/lib/types'
 
 export interface DeleteIdeaDialogProps {
@@ -20,10 +19,9 @@ export function DeleteIdeaDialog({ idea, onCancel, onConfirm }: DeleteIdeaDialog
     setBusy(true)
     try { await onConfirm(idea) } finally { setBusy(false) }
   }
-  const container = portalContainer()
 
   return <AlertDialog open={idea !== null} onOpenChange={(open) => { if (!open) onCancel() }}>
-    <AlertDialogContent container={container}>
+    <AlertDialogContent>
       <AlertDialogTitle>¿Borrar esta idea?</AlertDialogTitle>
       <AlertDialogDescription>
         «{idea?.content}» se borrará de Kairos y no se puede deshacer. Si ya la exportaste, el archivo en Obsidian se queda como está: la exportación nunca borra nada del vault.

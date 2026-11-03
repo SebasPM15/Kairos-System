@@ -4,7 +4,6 @@ import { useRef, type ReactNode } from 'react'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { portalContainer } from '@/lib/portal-container'
 
 export const Dialog = DialogPrimitive.Root
 
@@ -29,7 +28,7 @@ export function DialogContent({ variant = 'modal', eyebrow, title, description, 
   const body = useRef<HTMLDivElement | null>(null)
   const initialFocus = () => (focusFirstField ? body.current?.querySelector<HTMLElement>(FIELDS) : null) ?? popup.current
 
-  return <DialogPrimitive.Portal container={portalContainer()}>
+  return <DialogPrimitive.Portal>
     <DialogPrimitive.Backdrop className="dialog-backdrop" />
     <DialogPrimitive.Viewport className="dialog-viewport" data-variant={variant}>
       <DialogPrimitive.Popup ref={popup} className="dialog-popup" data-variant={variant} aria-modal="true" initialFocus={initialFocus}>

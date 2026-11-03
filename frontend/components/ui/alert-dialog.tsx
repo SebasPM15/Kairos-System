@@ -8,14 +8,12 @@ import { Button } from '@/components/ui/button'
 
 const AlertDialog = AlertDialogPrimitive.Root
 
-// The portal renders into `container` (the dashboard) so the dashboard's own theme variables apply
 function AlertDialogContent({
   className,
-  container,
   ...props
-}: AlertDialogPrimitive.Popup.Props & { container?: HTMLElement | null }) {
+}: AlertDialogPrimitive.Popup.Props) {
   return (
-    <AlertDialogPrimitive.Portal container={container}>
+    <AlertDialogPrimitive.Portal>
       <AlertDialogPrimitive.Backdrop className="fixed inset-0 z-[40] bg-black/50 transition-opacity data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
       <AlertDialogPrimitive.Popup
         data-slot="alert-dialog-content"

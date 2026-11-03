@@ -5,6 +5,7 @@ import { Moon, Plus, Sun, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { pluralLabel } from '@/lib/labels'
 import type { Project } from '@/lib/types'
+import { useTheme } from '@/lib/use-theme'
 import { ExportDialog } from '@/components/export/export-dialog'
 import { ProjectDrawer } from '@/components/projects/project-drawer'
 import { useDashboard, type View } from './dashboard-context'
@@ -36,15 +37,16 @@ function ProjectActions() {
   </>
 }
 
-function HeaderActions({ light, onToggleTheme }: { light: boolean; onToggleTheme: () => void }) {
+function HeaderActions() {
   const { exporting, setExporting } = useDashboard()
+  const { theme, setTheme } = useTheme()
   return <div className="header-actions">
     <Button variant="outline" size="sm" onClick={() => setExporting(!exporting)} aria-expanded={exporting}>
       <Upload className="export-icon" /><span className="btn-label">Exportar a Obsidian</span>
     </Button>
     <ProjectActions />
-    <Button variant="ghost" size="icon" onClick={onToggleTheme} aria-label="Cambiar tema">
-      {light ? <Moon /> : <Sun />}
+    <Button variant="ghost" size="icon" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} aria-label="Cambiar tema">
+      {theme === 'light' ? <Moon /> : <Sun />}
     </Button>
   </div>
 }
@@ -69,13 +71,12 @@ function SelectedProjectDrawer() {
 
 // Header, project drawer and the creation and export dialogs; the current view is passed as children
 export function AppShell({ children }: { children: ReactNode }) {
-  const [light, setLight] = useState(false)
   const { exporting, setExporting } = useDashboard()
-  return <main className={light ? 'dashboard light' : 'dashboard'}>
+  return <main className="dashboard">
     <header className="header">
       <div className="brand"><div className="brand-mark">●</div><span>Kairos</span></div>
       <MainNav />
-      <HeaderActions light={light} onToggleTheme={() => setLight(!light)} />
+      <HeaderActions />
     </header>
     <div className="container">
       {children}
