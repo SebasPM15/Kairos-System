@@ -15,16 +15,17 @@ const ERROR_MS = 8000
 export const toast = {
   success: (title: string, description?: string) =>
     manager.add({ type: 'success', title, description, timeout: SUCCESS_MS }),
-  // High priority makes Base UI announce it as an alert
+  // Not priority 'high': Base UI hides those from assistive tech (aria-hidden) until focused, so the error
+  // would go unannounced. role="alert" on the toast (see ToastList) makes it assertive instead.
   error: (title: string, description?: string) =>
-    manager.add({ type: 'error', title, description, timeout: ERROR_MS, priority: 'high' }),
+    manager.add({ type: 'error', title, description, timeout: ERROR_MS }),
 }
 
 function ToastList() {
   const { toasts } = Toast.useToastManager()
   return <Toast.Portal container={portalContainerRef}>
     <Toast.Viewport className="toast-viewport" aria-label="Notificaciones">
-      {toasts.map((item) => <Toast.Root key={item.id} toast={item} className="toast" data-type={item.type}>
+      {toasts.map((item) => <Toast.Root key={item.id} toast={item} className="toast" data-type={item.type} role={item.type === 'error' ? 'alert' : undefined}>
         <Toast.Content className="toast-content">
           <div className="toast-text">
             <Toast.Title className="toast-title" />
