@@ -1,18 +1,24 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
+import { Field } from '@/components/ui/field'
+import { Textarea } from '@/components/ui/textarea'
 import { fieldErrors } from '@/lib/labels'
+import { useRefocus } from '@/lib/use-refocus'
 
 export interface IdeaFormProps {
   // Rejects with the API error; validation issues are shown on the field, the rest goes to onError
   onSubmit: (content: string) => Promise<void>
   onError: (error: unknown) => void
   placeholder?: string
+  autoFocus?: boolean
 }
 
-export function IdeaForm({ onSubmit, onError, placeholder = 'Nueva idea' }: IdeaFormProps) {
+export function IdeaForm({ onSubmit, onError, placeholder = 'Nueva idea', autoFocus }: IdeaFormProps) {
   const [content, setContent] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const contentRef = useRef<HTMLInputElement | null>(null)
+  useRefocus(busy, contentRef)
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
@@ -29,7 +35,19 @@ export function IdeaForm({ onSubmit, onError, placeholder = 'Nueva idea' }: Idea
   }
 
   return <form onSubmit={submit} noValidate aria-label="Nueva idea">
-    <div className="action-input"><input value={content} onChange={(e) => setContent(e.target.value)} placeholder={placeholder} aria-label="Contenido de la idea" aria-invalid={!!error} /><Button type="submit" size="sm" disabled={busy}>Añadir</Button></div>
-    {error && <p className="field-error">{error}</p>}
+    <Field label="Contenido de la idea" hideLabel error={error}>
+      <div className="action-input">
+        <Textarea
+          ref={contentRef}
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder={placeholder}
+          disabled={busy}
+          autoFocus={autoFocus}
+          submitOnEnter
+        />
+        <Button type="submit" size="sm" disabled={busy}>{busy ? 'Añadiendo…' : 'Añadir'}</Button>
+      </div>
+    </Field>
   </form>
 }

@@ -1,6 +1,10 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
+import { Field } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { fieldErrors } from '@/lib/labels'
+import { useRefocus } from '@/lib/use-refocus'
 import type { DecisionCreate } from '@/lib/types'
 
 export interface DecisionFormProps {
@@ -16,6 +20,8 @@ export function DecisionForm({ onSubmit, onError }: DecisionFormProps) {
   const [rationale, setRationale] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
+  const titleRef = useRef<HTMLInputElement | null>(null)
+  useRefocus(busy, titleRef)
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
@@ -36,12 +42,14 @@ export function DecisionForm({ onSubmit, onError }: DecisionFormProps) {
   }
 
   return <form className="form-panel" onSubmit={submit} noValidate aria-label="Nueva decisión">
-    <label className="field-label" htmlFor="decision-title">Decisión</label>
-    <input id="decision-title" value={title} onChange={(e) => setTitle(e.target.value)} aria-invalid={!!errors.title} />
-    {errors.title && <p className="field-error">{errors.title}</p>}
-    <label className="field-label" htmlFor="decision-rationale">Por qué</label>
-    <input id="decision-rationale" value={rationale} onChange={(e) => setRationale(e.target.value)} aria-invalid={!!errors.rationale} />
-    {errors.rationale && <p className="field-error">{errors.rationale}</p>}
-    <div className="form-actions"><Button type="submit" size="sm" disabled={busy}>Registrar decisión</Button></div>
+    <Field label="Decisión" error={errors.title}>
+      <Input ref={titleRef} value={title} onChange={(e) => setTitle(e.target.value)} disabled={busy} autoFocus />
+    </Field>
+    <Field label="Por qué" error={errors.rationale}>
+      <Textarea value={rationale} onChange={(e) => setRationale(e.target.value)} disabled={busy} submitOnEnter />
+    </Field>
+    <div className="form-actions">
+      <Button type="submit" size="sm" disabled={busy}>{busy ? 'Registrando…' : 'Registrar decisión'}</Button>
+    </div>
   </form>
 }

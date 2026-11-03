@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Field } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
 import { PROJECT_STATUSES, type Decision, type DecisionCreate, type Idea, type Milestone, type Project, type ProjectStatus, type ProjectUpdate } from '@/lib/types'
 import { errorMessage, fieldErrors, statusLabel } from '@/lib/labels'
 import * as api from '@/lib/api'
@@ -69,8 +71,8 @@ export function ProjectDrawer({ project, maxActive, onClose, onUpdate, onError }
 
   return <aside className="drawer" aria-label={`Detalles de ${project.name}`}><div className="drawer-head"><div><p className="eyebrow">Detalle del proyecto</p><h2>{project.name}</h2></div><Button variant="ghost" size="icon" onClick={onClose} aria-label="Cerrar"><X /></Button></div>
     <div className="drawer-tabs">{TABS.map(([value, label]) => <button key={value} className={tab === value ? 'selected' : ''} onClick={() => setTab(value)}>{label}</button>)}</div>
-    {tab === 'detalles' && <div className="drawer-content"><p className="drawer-description">{project.description}</p><label className="field-label" htmlFor="status">Estado</label><select id="status" value={project.status} onChange={(e) => updateStatus(e.target.value as ProjectStatus)}>{PROJECT_STATUSES.map((value) => <option key={value} value={value}>{statusLabel[value]}</option>)}</select>{statusError && <p className="field-error" role="alert">{statusError}</p>}<label className="field-label" htmlFor="next-action">Próxima acción</label><div className="action-input"><input id="next-action" value={action} aria-invalid={!!actionError} onChange={(e) => setAction(e.target.value)} onBlur={saveAction} placeholder="¿Cuál es el siguiente paso?" /><Button size="sm" onClick={saveAction}>Guardar</Button></div>{actionError && <p className="field-error" role="alert">{actionError}</p>}<div className="section-title"><span>Hitos</span><span>{project.progress}%</span></div><div className="milestones"><MilestoneList milestones={milestones} onToggle={toggle} /></div><MilestoneForm onSubmit={addMilestone} onError={onError} /></div>}
-    {tab === 'ideas' && <div className="drawer-content"><IdeaForm onSubmit={addIdea} onError={onError} /><IdeaList ideas={ideas} /></div>}
+    {tab === 'detalles' && <div className="drawer-content"><p className="drawer-description">{project.description}</p><label className="field-label" htmlFor="status">Estado</label><select id="status" value={project.status} onChange={(e) => updateStatus(e.target.value as ProjectStatus)}>{PROJECT_STATUSES.map((value) => <option key={value} value={value}>{statusLabel[value]}</option>)}</select>{statusError && <p className="field-error" role="alert">{statusError}</p>}<Field label="Próxima acción" error={actionError}><div className="action-input"><Input value={action} onChange={(e) => setAction(e.target.value)} onBlur={saveAction} placeholder="¿Cuál es el siguiente paso?" /><Button size="sm" onClick={saveAction}>Guardar</Button></div></Field><div className="section-title"><span>Hitos</span><span>{project.progress}%</span></div><div className="milestones"><MilestoneList milestones={milestones} onToggle={toggle} /></div><MilestoneForm onSubmit={addMilestone} onError={onError} /></div>}
+    {tab === 'ideas' && <div className="drawer-content"><IdeaForm onSubmit={addIdea} onError={onError} autoFocus /><IdeaList ideas={ideas} /></div>}
     {tab === 'decisiones' && <div className="drawer-content"><DecisionForm onSubmit={addDecision} onError={onError} /><DecisionList decisions={decisions} /></div>}
   </aside>
 }
