@@ -37,7 +37,7 @@ export function ProjectForm({ onSubmit, onCancel, onError }: ProjectFormProps) {
 
   return <form className="form-panel" onSubmit={submit} noValidate aria-label="Nuevo proyecto">
     <Field label="Nombre" error={errors.name}>
-      <Input ref={nameRef} value={name} onChange={(e) => setName(e.target.value)} disabled={busy} autoFocus />
+      <Input ref={nameRef} value={name} onChange={(e) => setName(e.target.value)} disabled={busy} />
     </Field>
     <Field label="Descripción" error={errors.description}>
       <Textarea value={description} onChange={(e) => setDescription(e.target.value)} disabled={busy} submitOnEnter />

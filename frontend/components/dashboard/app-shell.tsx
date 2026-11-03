@@ -4,9 +4,10 @@ import { useState, type ReactNode } from 'react'
 import { Moon, Plus, Sun, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { pluralLabel } from '@/lib/labels'
-import { ExportPanel } from '@/components/export/export-panel'
+import { ExportDialog } from '@/components/export/export-dialog'
 import { ProjectDrawer } from '@/components/projects/project-drawer'
 import { useDashboard, type View } from './dashboard-context'
+import { CreateProjectDialog } from './create-project-dialog'
 import { Notice } from './notice'
 
 const VIEWS: [View, string][] = [['projects', 'Proyectos'], ['ideas', 'Ideas'], ['bot', 'Bot']]
@@ -76,9 +77,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     </header>
     <div className="container">
       {notice && <Notice message={notice} onDismiss={() => setNotice(null)} />}
-      {exporting && <ExportPanel onClose={() => setExporting(false)} />}
       {children}
     </div>
     <SelectedProjectDrawer />
+    <CreateProjectDialog />
+    <ExportDialog open={exporting} onOpenChange={setExporting} />
   </main>
 }

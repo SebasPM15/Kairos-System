@@ -1,6 +1,5 @@
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ProjectForm } from '@/components/projects/project-form'
 import { useDashboard } from './dashboard-context'
 import { FocusSection } from './focus-section'
 import { ProjectsSection } from './projects-section'
@@ -35,10 +34,9 @@ function Intro() {
 }
 
 export function ProjectsView() {
-  const { load, projects, creating, setCreating, createProject, showError, retry } = useDashboard()
+  const { load, projects, retry } = useDashboard()
   return <>
     <Intro />
-    {creating && <ProjectForm onSubmit={createProject} onCancel={() => setCreating(false)} onError={showError} />}
     {load.state === 'loading' && <ProjectsSkeleton />}
     {load.state === 'error' && <LoadError message={load.message} onRetry={retry} />}
     {load.state === 'ready' && projects.length === 0 && <EmptyProjects />}
