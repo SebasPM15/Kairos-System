@@ -14,3 +14,6 @@ vault-dev/
 # Demo environment (docs/ESTADO.md, "Entorno de demo")
 backend/demo.db
 demo-vault/
+
+# Milestone 11 before/after screenshots
+docs/capturas-h11/
