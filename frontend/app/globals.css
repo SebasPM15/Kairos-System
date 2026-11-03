@@ -185,3 +185,8 @@ main:focus { outline: none; }
   .header .sidebar-brand { height: auto; padding: 0; }
   .dialog-popup[data-variant="side"][data-side="left"] { width: min(300px, 86vw); border-width: 0 1px 0 0; }
 }
+/* Ideas on mobile: tag and date on one row, project select and Borrar sharing the next one */
+@media (max-width: 760px) {
+  .idea-meta { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px 10px; }
+  .idea-meta .select { display: flex; width: 100%; margin-left: 0; }
+}
