@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
+import Link from 'next/link'
 import { Moon, Plus, Sun, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { pluralLabel } from '@/lib/labels'
@@ -8,20 +9,19 @@ import type { Project } from '@/lib/types'
 import { useTheme } from '@/lib/use-theme'
 import { ExportDialog } from '@/components/export/export-dialog'
 import { ProjectDrawer } from '@/components/projects/project-drawer'
-import { useDashboard, type View } from './dashboard-context'
+import { ROUTES, useDashboard, type View } from './dashboard-context'
 import { CreateProjectDialog } from './create-project-dialog'
 
 const VIEWS: [View, string][] = [['projects', 'Proyectos'], ['ideas', 'Ideas'], ['bot', 'Bot']]
 
 function MainNav() {
-  const { view, changeView } = useDashboard()
+  const { view } = useDashboard()
   return <nav className="main-nav" aria-label="Secciones">
-    {VIEWS.map(([value, label]) => <button
+    {VIEWS.map(([value, label]) => <Link
       key={value}
-      className={view === value ? 'selected' : ''}
+      href={ROUTES[value]}
       aria-current={view === value ? 'page' : undefined}
-      onClick={() => changeView(value)}
-    >{label}</button>)}
+    >{label}</Link>)}
   </nav>
 }
 

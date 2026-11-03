@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { usePathname } from 'next/navigation'
 import type { Project, ProjectCreate } from '@/lib/types'
 import { TOAST, errorMessage } from '@/lib/labels'
 import { toast } from '@/components/ui/toaster'
@@ -13,8 +14,8 @@ export type Load =
   | { state: 'error'; message: string }
   | { state: 'ready'; projects: Project[] }
 
-// Shared dashboard state. It lives above the views so that switching view (or, later, route)
-// keeps the project list, the open drawer and the project filters.
+// Shared dashboard state. The provider lives in the (app) layout, so navigating between routes
+// keeps the project list, the project filters and the search text; the drawer closes on navigation.
 export interface DashboardContextValue {
   load: Load
   projects: Project[]
@@ -30,8 +31,8 @@ export interface DashboardContextValue {
   // Mutation failures (create, assign, delete...) surface as an error toast; the form keeps what was typed
   showError: (error: unknown) => void
 
+  // Derived from the URL
   view: View
-  changeView: (view: View) => void
   selectedId: number | null
   selected: Project | null
   setSelectedId: (id: number | null) => void
@@ -48,6 +49,14 @@ export interface DashboardContextValue {
   setQuery: (query: string) => void
 }
 
+export const ROUTES: Record<View, string> = { projects: '/proyectos', ideas: '/ideas', bot: '/bot' }
+
+function viewFromPath(pathname: string): View {
+  if (pathname.startsWith(ROUTES.ideas)) return 'ideas'
+  if (pathname.startsWith(ROUTES.bot)) return 'bot'
+  return 'projects'
+}
+
 const DashboardContext = createContext<DashboardContextValue | null>(null)
 
 export function useDashboard(): DashboardContextValue {
@@ -60,8 +69,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [load, setLoad] = useState<Load>({ state: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const [maxActive, setMaxActive] = useState<number | null>(null)
-  const [view, setView] = useState<View>('projects')
-  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const pathname = usePathname()
+  const view = viewFromPath(pathname)
+  // The selection remembers the route it was made on, so it dies when the route changes
+  const [selection, setSelection] = useState<{ id: number; path: string } | null>(null)
+  if (selection && selection.path !== pathname) setSelection(null)
+  const selectedId = selection ? selection.id : null
+  const setSelectedId = useCallback((id: number | null) => setSelection(id === null ? null : { id, path: pathname }), [pathname])
   const [creating, setCreating] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [filter, setFilter] = useState('all')
@@ -104,8 +118,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       : current)
   }
 
-  const changeView = (next: View) => { setView(next); setSelectedId(null) }
-
   const projects = load.state === 'ready' ? load.projects : []
   const selected = projects.find((p) => p.id === selectedId) ?? null
   const activeCount = projects.filter((p) => p.status === 'active').length
@@ -113,7 +125,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   return <DashboardContext.Provider value={{
     load, projects, activeCount, maxActive, retry, refreshProjects, createProject, updateProject,
     showError,
-    view, changeView, selectedId, selected, setSelectedId,
+    view, selectedId, selected, setSelectedId,
     creating, setCreating, exporting, setExporting,
     filter, setFilter, sort, setSort, query, setQuery,
   }}>{children}</DashboardContext.Provider>
