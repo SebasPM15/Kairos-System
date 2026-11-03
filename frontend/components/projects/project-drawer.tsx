@@ -38,14 +38,20 @@ export function ProjectDrawer({ project, open, maxActive, onClose, onUpdate, onE
   const [ideas, setIdeas] = useState<Idea[] | null>(null)
   const [decisions, setDecisions] = useState<Decision[] | null>(null)
   const [statusError, setStatusError] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
   const [actionError, setActionError] = useState<string | null>(null)
   const projectId = project.id
 
+  // Loading problems stay inside the drawer with a retry; they are not toasts
   useEffect(() => {
-    api.milestones.list(projectId).then(setMilestones).catch(onError)
-    api.ideas.listByProject(projectId).then(setIdeas).catch(onError)
-    api.decisions.listByProject(projectId).then(setDecisions).catch(onError)
-  }, [projectId, onError])
+    const failed = (error: unknown) => setLoadError(errorMessage(error))
+    api.milestones.list(projectId).then(setMilestones).catch(failed)
+    api.ideas.listByProject(projectId).then(setIdeas).catch(failed)
+    api.decisions.listByProject(projectId).then(setDecisions).catch(failed)
+  }, [projectId, attempt])
+
+  const retryLoad = () => { setLoadError(null); setAttempt((n) => n + 1) }
 
   // 409 belongs to the status control, business/validation 422 to the next-action field
   const reportProjectError = (error: unknown) => {
@@ -73,6 +79,7 @@ export function ProjectDrawer({ project, open, maxActive, onClose, onUpdate, onE
   const addDecision = async (data: DecisionCreate) => { await api.decisions.create(project.id, data); setDecisions(await api.decisions.listByProject(project.id)); onUpdate(await api.projects.get(project.id)); toast.success(TOAST.decisionAdded) }
 
   return <Dialog open={open} onOpenChange={(next) => { if (!next) onClose() }}><DialogContent variant="side" eyebrow="Detalle del proyecto" title={project.name}>
+    {loadError && <div className="state-panel" role="alert"><h3>No pudimos cargar los datos del proyecto</h3><p>{loadError}</p><Button variant="outline" onClick={retryLoad}>Reintentar</Button></div>}
     <div className="drawer-tabs">{TABS.map(([value, label]) => <button key={value} className={tab === value ? 'selected' : ''} onClick={() => setTab(value)}>{label}</button>)}</div>
     {tab === 'detalles' && <div className="drawer-content"><p className="drawer-description">{project.description}</p><label className="field-label" htmlFor="status">Estado</label><Select id="status" value={project.status} onChange={(e) => updateStatus(e.target.value as ProjectStatus)}>{PROJECT_STATUSES.map((value) => <option key={value} value={value}>{statusLabel[value]}</option>)}</Select>{statusError && <p className="field-error" role="alert">{statusError}</p>}<Field label="Próxima acción" error={actionError}><div className="action-input"><Input value={action} onChange={(e) => setAction(e.target.value)} onBlur={saveAction} placeholder="¿Cuál es el siguiente paso?" /><Button size="sm" onClick={saveAction}>Guardar</Button></div></Field><div className="section-title"><span>Hitos</span><span>{project.progress}%</span></div><div className="milestones"><MilestoneList milestones={milestones} onToggle={toggle} /></div><MilestoneForm onSubmit={addMilestone} onError={onError} /></div>}
     {tab === 'ideas' && <div className="drawer-content"><IdeaForm onSubmit={addIdea} onError={onError} autoFocus /><IdeaList ideas={ideas} /></div>}

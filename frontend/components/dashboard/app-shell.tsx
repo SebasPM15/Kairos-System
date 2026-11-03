@@ -9,7 +9,6 @@ import { ExportDialog } from '@/components/export/export-dialog'
 import { ProjectDrawer } from '@/components/projects/project-drawer'
 import { useDashboard, type View } from './dashboard-context'
 import { CreateProjectDialog } from './create-project-dialog'
-import { Notice } from './notice'
 
 const VIEWS: [View, string][] = [['projects', 'Proyectos'], ['ideas', 'Ideas'], ['bot', 'Bot']]
 
@@ -68,10 +67,10 @@ function SelectedProjectDrawer() {
   />
 }
 
-// Header, notices, export panel and the project drawer; the current view is passed as children
+// Header, project drawer and the creation and export dialogs; the current view is passed as children
 export function AppShell({ children }: { children: ReactNode }) {
   const [light, setLight] = useState(false)
-  const { notice, setNotice, exporting, setExporting } = useDashboard()
+  const { exporting, setExporting } = useDashboard()
   return <main className={light ? 'dashboard light' : 'dashboard'}>
     <header className="header">
       <div className="brand"><div className="brand-mark">●</div><span>Kairos</span></div>
@@ -79,7 +78,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       <HeaderActions light={light} onToggleTheme={() => setLight(!light)} />
     </header>
     <div className="container">
-      {notice && <Notice message={notice} onDismiss={() => setNotice(null)} />}
       {children}
     </div>
     <SelectedProjectDrawer />

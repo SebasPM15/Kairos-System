@@ -27,8 +27,7 @@ export interface DashboardContextValue {
   createProject: (data: ProjectCreate) => Promise<void>
   updateProject: (project: Project) => void
 
-  notice: string | null
-  setNotice: (message: string | null) => void
+  // Mutation failures (create, assign, delete...) surface as an error toast; the form keeps what was typed
   showError: (error: unknown) => void
 
   view: View
@@ -61,7 +60,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [load, setLoad] = useState<Load>({ state: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const [maxActive, setMaxActive] = useState<number | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
   const [view, setView] = useState<View>('projects')
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [creating, setCreating] = useState(false)
@@ -89,11 +87,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     api.projects.list().then((projects) => setLoad({ state: 'ready', projects }), () => undefined)
   }, [])
 
-  const showError = useCallback((error: unknown) => setNotice(errorMessage(error)), [])
+  const showError = useCallback((error: unknown) => toast.error(TOAST.errorTitle, errorMessage(error)), [])
 
   const createProject = async (data: ProjectCreate) => {
     const project = await api.projects.create(data)
-    setNotice(null)
     setLoad((current) => current.state === 'ready'
       ? { state: 'ready', projects: [...current.projects, project] }
       : current)
@@ -102,7 +99,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   }
 
   const updateProject = (project: Project) => {
-    setNotice(null)
     setLoad((current) => current.state === 'ready'
       ? { state: 'ready', projects: current.projects.map((p) => p.id === project.id ? project : p) }
       : current)
@@ -116,7 +112,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   return <DashboardContext.Provider value={{
     load, projects, activeCount, maxActive, retry, refreshProjects, createProject, updateProject,
-    notice, setNotice, showError,
+    showError,
     view, changeView, selectedId, selected, setSelectedId,
     creating, setCreating, exporting, setExporting,
     filter, setFilter, sort, setSort, query, setQuery,

@@ -91,6 +91,7 @@ export const NO_NEXT_ACTION_FOCUS_PROMPT = 'Define una próxima acción para des
 
 // Success toasts: short confirmations of something that already happened
 export const TOAST = {
+  errorTitle: 'No se pudo completar la acción',
   projectCreated: 'Proyecto creado',
   milestoneAdded: 'Hito añadido',
   decisionAdded: 'Decisión registrada',
