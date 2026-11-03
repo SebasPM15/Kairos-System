@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import type { ExportSummary } from '@/lib/types'
-import { errorMessage } from '@/lib/labels'
+import { errorMessage, formatCount } from '@/lib/labels'
 import * as api from '@/lib/api'
 
 export interface ExportPanelProps {
@@ -11,8 +11,6 @@ export interface ExportPanelProps {
 }
 
 type Result = { state: 'idle' } | { state: 'running' } | { state: 'done'; summary: ExportSummary } | { state: 'error'; message: string }
-
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 
 export function ExportPanel({ onClose }: ExportPanelProps) {
   const [result, setResult] = useState<Result>({ state: 'idle' })
@@ -28,7 +26,7 @@ export function ExportPanel({ onClose }: ExportPanelProps) {
     <Button size="sm" onClick={run} disabled={result.state === 'running'}>{result.state === 'running' ? 'Exportando…' : 'Exportar ahora'}</Button>
     {result.state === 'error' && <p className="field-error" role="alert">{result.message}</p>}
     {result.state === 'done' && <div className="export-result" role="status">
-      <p><strong>Exportación lista.</strong> {plural(result.summary.projects_exported, 'proyecto exportado', 'proyectos exportados')}; {plural(result.summary.files_written, 'archivo escrito', 'archivos escritos')} y {plural(result.summary.files_unchanged, 'sin cambios', 'sin cambios')}.</p>
+      <p><strong>Exportación lista.</strong> {formatCount('projectExported', result.summary.projects_exported)}; {formatCount('fileWritten', result.summary.files_written)} y {formatCount('fileUnchanged', result.summary.files_unchanged)}.</p>
       {result.summary.orphans.length > 0 && <p>Carpetas en el vault sin proyecto (no se tocaron): {result.summary.orphans.join(', ')}.</p>}
     </div>}
   </section>

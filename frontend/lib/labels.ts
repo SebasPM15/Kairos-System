@@ -8,6 +8,32 @@ export const statusLabel: Record<ProjectStatus, string> = {
   done: 'Terminado',
 }
 
+// Singular/plural forms per count noun. The key + count signature maps onto ICU plural messages
+// when next-intl arrives, so call sites will not change.
+const COUNT_FORMS = {
+  day: { one: 'día', other: 'días' },
+  milestone: { one: 'hito', other: 'hitos' },
+  decision: { one: 'decisión', other: 'decisiones' },
+  idea: { one: 'idea', other: 'ideas' },
+  project: { one: 'proyecto', other: 'proyectos' },
+  activeProject: { one: 'activo', other: 'activos' },
+  projectExported: { one: 'proyecto exportado', other: 'proyectos exportados' },
+  fileWritten: { one: 'archivo escrito', other: 'archivos escritos' },
+  fileUnchanged: { one: 'sin cambios', other: 'sin cambios' },
+} as const
+
+export type CountKey = keyof typeof COUNT_FORMS
+
+const pluralRules = new Intl.PluralRules('es')
+
+export function pluralLabel(key: CountKey, count: number): string {
+  return COUNT_FORMS[key][pluralRules.select(count) === 'one' ? 'one' : 'other']
+}
+
+export function formatCount(key: CountKey, count: number): string {
+  return `${count} ${pluralLabel(key, count)}`
+}
+
 export type ErrorContext = { maxActive?: number }
 
 export function activeLimitMessage(maxActive?: number) {
