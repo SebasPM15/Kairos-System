@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { portalContainer } from '@/lib/portal-container'
 import type { Idea } from '@/lib/types'
 
 export interface DeleteIdeaDialogProps {
@@ -19,7 +20,7 @@ export function DeleteIdeaDialog({ idea, onCancel, onConfirm }: DeleteIdeaDialog
     setBusy(true)
     try { await onConfirm(idea) } finally { setBusy(false) }
   }
-  const container = typeof document === 'undefined' ? null : document.querySelector<HTMLElement>('.dashboard')
+  const container = portalContainer()
 
   return <AlertDialog open={idea !== null} onOpenChange={(open) => { if (!open) onCancel() }}>
     <AlertDialogContent container={container}>
