@@ -55,7 +55,7 @@ Copiar `.env.example` a `.env` y completar. El `.env` nunca se commitea.
 - Commits convencionales, pequeños, sin coautoría de Claude.
 - Respetar las capas del backend: routers delgados -> services -> repositories.
 - En tareas de diseño/UI, usar los skills de diseño que existan en `~/.claude/skills` (p. ej. `impeccable`, `ui-ux-pro-max`, `design-system`, `ui-styling`) y comprobar el resultado en navegador; los skills de marketing no aplican.
-- Todo cambio de UI se verifica a 390/768/1024/1280 px sin scroll horizontal, en ambos temas.
+- Todo cambio de UI se verifica a 390/768/1024/1280 px sin scroll horizontal, en ambos temas, y con nombres de 120 caracteres (con y sin espacios).
 - Decisiones cerradas (no cambiar sin pedirlo): BD fuente de verdad, vault unidireccional, `MAX_ACTIVE_PROJECTS=3`, estados en inglés en BD/API, porcentaje calculado en el backend.
 
 ## Regla de sesión
