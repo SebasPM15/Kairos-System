@@ -51,7 +51,7 @@ button { cursor: pointer; }
 .form-panel input { background: var(--soft); border: 1px solid var(--line-strong); color: var(--foreground); border-radius: 7px; padding: 8px 10px; font-size: 13px; }
 .form-actions { display: flex; gap: 8px; margin-top: 8px; }
 .field-error { margin: 4px 0 0; color: var(--danger); font-size: 12px; }
-input[aria-invalid="true"] { border-color: var(--danger); }
+input[aria-invalid="true"], textarea[aria-invalid="true"] { border-color: var(--danger); }
 .main-nav { display: flex; gap: 22px; margin-left: 40px; }
 .main-nav button { color: var(--muted); background: none; border: 0; padding: 4px 0; font-size: 13px; border-bottom: 2px solid transparent; }
 .main-nav button.selected { color: var(--foreground); border-color: var(--accent-text); }
@@ -79,10 +79,18 @@ select { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space
   .export-icon { display: block; }
   button, .milestone { min-height: 44px; }
   button { min-width: 44px; }
-  body :is(input, select):not([type="checkbox"]) { min-height: 44px; font-size: 16px; }
+  body :is(input, select, textarea):not([type="checkbox"]) { min-height: 44px; font-size: 16px; }
 }
 /* The ring goes on the whole search box; the bare input inside it stays quiet */
 .search:has(input:focus-visible) { outline: 2px solid var(--accent-text); outline-offset: 2px; }
 .search input:focus-visible { outline: none; }
 /* Scroll containers would clip an outward ring */
 .filters button:focus-visible, .drawer-tabs button:focus-visible { outline-offset: -2px; }
+/* ui/field, ui/input, ui/textarea */
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field .field-label { margin-top: 0; }
+.field-help { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.4; }
+.field .field-error { margin: 0; }
+.input { width: 100%; min-width: 0; background: var(--soft); border: 1px solid var(--line-strong); color: var(--foreground); border-radius: 7px; padding: 8px 10px; font-size: 13px; }
+.input:disabled { opacity: .6; cursor: not-allowed; }
+.textarea { display: block; resize: none; max-height: 9rem; overflow-y: auto; line-height: 1.5; }
