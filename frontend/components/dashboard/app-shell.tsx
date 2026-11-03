@@ -1,14 +1,15 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
-import { Plus, Upload } from 'lucide-react'
+import { Menu, Plus, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { pluralLabel } from '@/lib/labels'
 import type { Project } from '@/lib/types'
 import { ExportDialog } from '@/components/export/export-dialog'
 import { ProjectDrawer } from '@/components/projects/project-drawer'
 import { useDashboard } from './dashboard-context'
-import { Sidebar } from './sidebar'
+import { MobileNav } from './mobile-nav'
+import { Sidebar, SidebarBrand } from './sidebar'
 import { CreateProjectDialog } from './create-project-dialog'
 
 function ProjectActions() {
@@ -54,15 +55,23 @@ function SelectedProjectDrawer() {
 // Sidebar, header with the actions, the page, the project drawer and the creation and export dialogs
 export function AppShell({ children }: { children: ReactNode }) {
   const { exporting, setExporting } = useDashboard()
+  const [navOpen, setNavOpen] = useState(false)
   return <div className="dashboard">
     <a className="skip-link" href="#contenido">Saltar al contenido</a>
     <Sidebar />
     <div className="dashboard-main">
-      <header className="header"><HeaderActions /></header>
+      <header className="header">
+        <Button variant="ghost" size="icon" className="menu-button" aria-label="Abrir menú" aria-expanded={navOpen} aria-controls="mobile-nav" onClick={() => setNavOpen(true)}>
+          <Menu />
+        </Button>
+        <div className="header-brand"><SidebarBrand /></div>
+        <HeaderActions />
+      </header>
       <main id="contenido" tabIndex={-1}>
         <div className="container">{children}</div>
       </main>
     </div>
+    <MobileNav open={navOpen} onOpenChange={setNavOpen} />
     <SelectedProjectDrawer />
     <CreateProjectDialog />
     <ExportDialog open={exporting} onOpenChange={setExporting} />

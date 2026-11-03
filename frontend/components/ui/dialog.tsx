@@ -10,6 +10,9 @@ export const Dialog = DialogPrimitive.Root
 export interface DialogContentProps {
   // "modal" is centered; "side" is a right-hand panel. Both go full screen at 760px and below.
   variant?: 'modal' | 'side'
+  // Which edge the "side" panel hugs; the project drawer is on the right, the mobile menu on the left
+  side?: 'left' | 'right'
+  id?: string
   eyebrow?: string
   title: ReactNode
   description?: ReactNode
@@ -23,15 +26,15 @@ export interface DialogContentProps {
 const FIELDS = 'input:not([type="hidden"]), textarea, select'
 
 // Focus trap, Escape, scroll lock, aria-labelledby (title) and focus return come from Base UI
-export function DialogContent({ variant = 'modal', eyebrow, title, description, children, focusFirstField, closeDisabled }: DialogContentProps) {
+export function DialogContent({ variant = 'modal', side = 'right', id, eyebrow, title, description, children, focusFirstField, closeDisabled }: DialogContentProps) {
   const popup = useRef<HTMLDivElement | null>(null)
   const body = useRef<HTMLDivElement | null>(null)
   const initialFocus = () => (focusFirstField ? body.current?.querySelector<HTMLElement>(FIELDS) : null) ?? popup.current
 
   return <DialogPrimitive.Portal>
     <DialogPrimitive.Backdrop className="dialog-backdrop" />
-    <DialogPrimitive.Viewport className="dialog-viewport" data-variant={variant}>
-      <DialogPrimitive.Popup ref={popup} className="dialog-popup" data-variant={variant} aria-modal="true" initialFocus={initialFocus}>
+    <DialogPrimitive.Viewport className="dialog-viewport" data-variant={variant} data-side={side}>
+      <DialogPrimitive.Popup ref={popup} id={id} className="dialog-popup" data-variant={variant} data-side={side} aria-modal="true" initialFocus={initialFocus}>
         <div className="dialog-head">
           <div>
             {eyebrow && <p className="eyebrow">{eyebrow}</p>}
