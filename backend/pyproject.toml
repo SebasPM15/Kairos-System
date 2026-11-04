@@ -10,6 +10,7 @@ dependencies = [
     "alembic",
     "python-telegram-bot",
     "pydantic-settings",
+    "tzdata",
 ]
 
 [project.optional-dependencies]
