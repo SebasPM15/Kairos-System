@@ -187,3 +187,70 @@ def test_deleting_project_returns_ideas_to_inbox(session, user, ideas, project):
 
     assert [i.id for i in ideas.list_inbox()] == [idea.id]
     assert ideas.list_inbox()[0].project_id is None
+
+
+def backdate_assignment(session, idea):
+    idea.assigned_at = utcnow() - timedelta(days=30)
+    session.commit()
+    return idea.assigned_at
+
+
+def test_create_in_project_sets_assigned_at_to_created_at(ideas, project):
+    idea = ideas.create(IdeaCreate(content="x", project_id=project.id))
+
+    assert idea.assigned_at == idea.created_at
+
+
+def test_create_in_inbox_leaves_assigned_at_empty(ideas):
+    assert ideas.create(IdeaCreate(content="x")).assigned_at is None
+
+
+def test_assigning_from_inbox_sets_assigned_at(ideas, project):
+    idea = ideas.create(IdeaCreate(content="x"))
+
+    updated = ideas.update(idea.id, IdeaUpdate(project_id=project.id))
+
+    assert updated.assigned_at is not None
+    assert updated.assigned_at >= updated.created_at
+
+
+def test_reassigning_to_another_project_resets_assigned_at(session, user, ideas, project):
+    other = ProjectService(session, user.id, Settings()).create(ProjectCreate(name="C"))
+    idea = ideas.create(IdeaCreate(content="x", project_id=project.id))
+    old = backdate_assignment(session, idea)
+
+    updated = ideas.update(idea.id, IdeaUpdate(project_id=other.id))
+
+    assert updated.assigned_at > old
+
+
+def test_reassigning_to_the_same_project_keeps_assigned_at(session, ideas, project):
+    idea = ideas.create(IdeaCreate(content="x", project_id=project.id))
+    old = backdate_assignment(session, idea)
+
+    updated = ideas.update(idea.id, IdeaUpdate(project_id=project.id))
+
+    assert updated.assigned_at == old
+
+
+def test_editing_content_keeps_assigned_at(session, ideas, project):
+    idea = ideas.create(IdeaCreate(content="x", project_id=project.id))
+    old = backdate_assignment(session, idea)
+
+    assert ideas.update(idea.id, IdeaUpdate(content="y")).assigned_at == old
+
+
+def test_returning_to_inbox_clears_assigned_at(ideas, project):
+    idea = ideas.create(IdeaCreate(content="x", project_id=project.id))
+
+    assert ideas.update(idea.id, IdeaUpdate(project_id=None)).assigned_at is None
+
+
+def test_deleting_the_project_leaves_the_idea_unassigned(session, user, ideas, project):
+    idea = ideas.create(IdeaCreate(content="x", project_id=project.id))
+
+    ProjectService(session, user.id, Settings()).delete(project.id)
+    session.refresh(idea)
+
+    # assigned_at may linger; metrics ignore it because project_id is NULL
+    assert idea.project_id is None

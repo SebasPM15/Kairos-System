@@ -23,10 +23,17 @@ class IdeaService:
 
     def create(self, data: IdeaCreate) -> Idea:
         project = self._get_project(data.project_id) if data.project_id is not None else None
-        idea = Idea(user_id=self._user_id, project_id=data.project_id, content=data.content)
+        now = utcnow()
+        idea = Idea(
+            user_id=self._user_id,
+            project_id=data.project_id,
+            content=data.content,
+            created_at=now,
+            assigned_at=now if project is not None else None,
+        )
         self._repo.add(idea)
         if project is not None:
-            project.last_activity_at = utcnow()
+            project.last_activity_at = now
         self._session.commit()
         return idea
 
@@ -57,11 +64,14 @@ class IdeaService:
     def _assign(self, idea: Idea, project_id: int | None) -> None:
         if project_id is None:
             idea.project_id = None
+            idea.assigned_at = None
             return
         project = self._get_project(project_id)
         if idea.project_id != project.id:
+            now = utcnow()
             idea.project_id = project.id
-            project.last_activity_at = utcnow()
+            idea.assigned_at = now
+            project.last_activity_at = now
 
     def _get(self, idea_id: int) -> Idea:
         idea = self._repo.get(self._user_id, idea_id)
