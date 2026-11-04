@@ -9,7 +9,7 @@ import { TOAST, errorMessage } from '@/lib/labels'
 import { toast } from '@/components/ui/toaster'
 import { formatDate } from '@/lib/format'
 import * as api from '@/lib/api'
-import { DeleteIdeaDialog } from './delete-idea-dialog'
+import { LazyDeleteIdeaDialog, preloadDialog } from '@/components/dashboard/lazy-dialogs'
 import { IdeaForm } from '@/components/projects/idea-form'
 
 export interface IdeasViewProps {
@@ -77,7 +77,7 @@ export function IdeasView({ projects, onProjectsChanged, onError }: IdeasViewPro
     {load.state === 'error' && <div className="state-panel" role="alert"><h3>No pudimos cargar tus ideas</h3><p>{load.message}</p><Button variant="outline" onClick={retry}>Reintentar</Button></div>}
     {load.state === 'ready' && ideas.length === 0 && <div className="state-panel"><h3>Aún no tienes ideas</h3><p>Anótalas aquí o con /idea en el bot de Telegram.</p></div>}
     {load.state === 'ready' && ideas.length > 0 && visible.length === 0 && <div className="state-panel"><h3>No hay ideas con este filtro</h3><p>Prueba con otro proyecto o con «Todas».</p></div>}
-    {visible.length > 0 && <ul className="entries mt-4">{visible.map((idea) => <li key={idea.id}><p>{idea.content}</p><div className="idea-meta"><span className={idea.project_id === null ? 'idea-tag inbox' : 'idea-tag'}>{projectName(idea.project_id)}</span><time dateTime={idea.created_at}>{formatDate(idea.created_at)}</time><Select value={idea.project_id === null ? INBOX : String(idea.project_id)} onChange={(e) => assign(idea, e.target.value)} aria-label={`Proyecto de la idea ${idea.id}`}><option value={INBOX}>{INBOX_LABEL}</option>{projects.map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}</Select><Button variant="ghost" size="sm" onClick={() => setPendingDelete(idea)} aria-label={`Borrar la idea ${idea.id}`}>Borrar</Button></div></li>)}</ul>}
-    <DeleteIdeaDialog idea={pendingDelete} onCancel={() => setPendingDelete(null)} onConfirm={remove} />
+    {visible.length > 0 && <ul className="entries mt-4">{visible.map((idea) => <li key={idea.id}><p>{idea.content}</p><div className="idea-meta"><span className={idea.project_id === null ? 'idea-tag inbox' : 'idea-tag'}>{projectName(idea.project_id)}</span><time dateTime={idea.created_at}>{formatDate(idea.created_at)}</time><Select value={idea.project_id === null ? INBOX : String(idea.project_id)} onChange={(e) => assign(idea, e.target.value)} aria-label={`Proyecto de la idea ${idea.id}`}><option value={INBOX}>{INBOX_LABEL}</option>{projects.map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}</Select><Button variant="ghost" size="sm" onClick={() => setPendingDelete(idea)} onPointerEnter={() => preloadDialog('deleteIdea')} onFocus={() => preloadDialog('deleteIdea')} aria-label={`Borrar la idea ${idea.id}`}>Borrar</Button></div></li>)}</ul>}
+    <LazyDeleteIdeaDialog idea={pendingDelete} onCancel={() => setPendingDelete(null)} onConfirm={remove} />
   </section>
 }

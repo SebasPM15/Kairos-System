@@ -2,6 +2,7 @@ import { ArrowUpRight } from 'lucide-react'
 import { NO_NEXT_ACTION_FOCUS_PROMPT, formatCount } from '@/lib/labels'
 import { StatusBadge } from '@/components/projects/status-badge'
 import { useDashboard } from './dashboard-context'
+import { preloadDialog } from './lazy-dialogs'
 
 export function FocusSection() {
   const { projects, setSelectedId } = useDashboard()
@@ -13,7 +14,7 @@ export function FocusSection() {
       <span className="section-count">{formatCount('project', focus.length)}</span>
     </div>
     <div className="focus-grid">
-      {focus.map((project, index) => <button key={project.id} className="focus-card" onClick={() => setSelectedId(project.id)}>
+      {focus.map((project, index) => <button key={project.id} className="focus-card" onClick={() => setSelectedId(project.id)} onPointerEnter={() => preloadDialog('drawer')} onFocus={() => preloadDialog('drawer')}>
         <div className="focus-number">0{index + 1}</div>
         <div className="focus-info">
           <StatusBadge status={project.status} />

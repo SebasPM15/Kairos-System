@@ -2,6 +2,7 @@ import { AlertTriangle, ArrowUpRight, CirclePlus } from 'lucide-react'
 import type { Project } from '@/lib/types'
 import { NO_NEXT_ACTION_LABEL, formatCount, pluralLabel } from '@/lib/labels'
 import { isAbandoned } from '@/lib/project-health'
+import { preloadDialog } from '@/components/dashboard/lazy-dialogs'
 import { StatusBadge } from './status-badge'
 
 function ProgressBar({ progress }: { progress: number }) { return <div className="progress-wrap"><div className="progress-track"><div className="progress-value" style={{ width: `${progress}%` }} /></div><span>{progress}%</span></div> }
@@ -15,7 +16,7 @@ export interface ProjectCardProps {
 export function ProjectCard({ project, onOpen }: ProjectCardProps) {
   const days = project.days_since_activity
   const abandoned = isAbandoned(project)
-  return <button className="project-card" onClick={onOpen} aria-label={`Abrir ${project.name}`}>
+  return <button className="project-card" onClick={onOpen} onPointerEnter={() => preloadDialog('drawer')} onFocus={() => preloadDialog('drawer')} aria-label={`Abrir ${project.name}`}>
     <div className="card-top"><div><h3>{project.name}</h3><p>{project.description}</p></div><StatusBadge status={project.status} /></div>
     <div className="progress-label"><span>Progreso</span><span>{project.milestones_done}/{project.milestones_total} {pluralLabel('milestone', project.milestones_total)}</span></div><ProgressBar progress={project.progress} />
     <div className={`touched ${daysTone(days)}`}>{abandoned ? <AlertTriangle data-icon="inline-start" /> : null}<span>{formatCount('day', days)} sin tocar</span>{abandoned ? <em>Proyecto abandonado</em> : null}</div>
