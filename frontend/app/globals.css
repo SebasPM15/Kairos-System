@@ -248,6 +248,8 @@ main:focus { outline: none; }
 .progress-meta { color: var(--muted); font: 11px monospace; }
 .chart-data summary { display: flex; align-items: center; min-height: 44px; color: var(--muted); font-size: 12px; cursor: pointer; }
 .chart-data summary:hover { color: var(--foreground); }
+.chart-data summary::before { content: '▸'; display: inline-block; width: 16px; transition: transform .15s ease; }
+.chart-data[open] summary::before { transform: rotate(90deg); }
 .chart-data summary:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
 .data-table caption { text-align: left; }
 .data-table th[scope="row"] { color: var(--text-soft); font-size: 13px; font-weight: 400; letter-spacing: 0; text-transform: none; }
