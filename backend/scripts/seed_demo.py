@@ -11,12 +11,12 @@ from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
 
-from sqlalchemy import create_engine, inspect, select
+from sqlalchemy import create_engine, func, inspect, select
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
 from app.config import Settings
-from app.models import Idea, Project, ProjectStatus
+from app.models import Idea, Milestone, Project, ProjectStatus
 from app.models.base import utcnow
 from app.schemas.decision import DecisionCreate
 from app.schemas.idea import IdeaCreate
@@ -47,6 +47,9 @@ class ProjectSpec:
     decisions: tuple[tuple[str, str], ...] = ()
     # Days since the last activity; None leaves the value the services set (now)
     idle_days: int | None = None
+    # With history: days ago each done milestone was completed, in milestone order. Never more
+    # recent than idle_days, so last_activity_at stays coherent with the events
+    done_days_ago: tuple[int, ...] = ()
 
 
 LONG_NAME = "Plataforma de seguimiento de proyectos personales con bot de Telegram, panel web y exportación a Obsidian"
@@ -78,6 +81,7 @@ PROJECTS: tuple[ProjectSpec, ...] = (
         3,
         (("Estudiar por las mañanas", "Con la cabeza fresca avanzo el doble que de noche."),),
         idle_days=12,
+        done_days_ago=(38, 19, 12),
     ),
     ProjectSpec(
         "Rediseño del portafolio",
@@ -92,6 +96,7 @@ PROJECTS: tuple[ProjectSpec, ...] = (
             ("Dominio actual sin cambios", "Evita perder el posicionamiento que ya tiene."),
         ),
         idle_days=1,
+        done_days_ago=(24, 13, 6, 1),
     ),
     ProjectSpec(
         "Blog de cocina casera",
@@ -101,6 +106,7 @@ PROJECTS: tuple[ProjectSpec, ...] = (
         ("Montar el blog", "Publicar cinco recetas", "Plantilla de fotos"),
         1,
         idle_days=47,
+        done_days_ago=(50,),
     ),
     ProjectSpec(
         "Automatizar la facturación",
@@ -128,6 +134,7 @@ PROJECTS: tuple[ProjectSpec, ...] = (
         1,
         (("Probar primero con una sola maceta", "Si falla, pierdo una planta y no todo el balcón."),),
         idle_days=18,
+        done_days_ago=(22,),
     ),
     ProjectSpec(
         "Aprender guitarra",
@@ -147,6 +154,7 @@ PROJECTS: tuple[ProjectSpec, ...] = (
         4,
         (("Docker Compose en lugar de instalar a mano", "Se reproduce en una tarde si algo falla."),),
         idle_days=33,
+        done_days_ago=(76, 58, 41, 33),
     ),
 )
 
@@ -164,6 +172,32 @@ IDEAS: tuple[tuple[str, str | None], ...] = (
     ("Hacer un ejercicio semanal de lectura de código ajeno", "Curso de Rust"),
     ("Mostrar los días sin tocar en el bot", LONG_NAME),
     ("Preguntar a un amigo cocinero por sus trucos", "Blog de cocina casera"),
+)
+
+
+# (content, project name or None for the inbox, days ago captured, days ago assigned). Assignments are
+# never more recent than the project's idle_days, so last_activity_at stays coherent.
+HISTORY_IDEAS: tuple[tuple[str, str | None, int, int | None], ...] = (
+    ("Revisar cómo exportan otros paneles sus datos a Markdown", None, 2, None),
+    ("Probar un tablero de lectura para los artículos guardados", None, 9, None),
+    ("Averiguar si el router casero soporta VLAN", None, 15, None),
+    ("Hacer una lista de libros técnicos pendientes", None, 30, None),
+    ("Medir cuánto tiempo real dedico a cada proyecto", None, 44, None),
+    ("Grabar un video corto mostrando el flujo del bot", None, 52, None),
+    ("Resolver los ejercicios de ownership antes del capítulo 5", "Curso de Rust", 40, 38),
+    ("Escribir un CLI pequeño para renombrar archivos", "Curso de Rust", 26, 26),
+    ("Probar una portada con una sola columna", "Rediseño del portafolio", 60, 55),
+    ("Agregar una página de contacto sin formulario", "Rediseño del portafolio", 33, 30),
+    ("Comprimir las capturas con un script", "Rediseño del portafolio", 14, 10),
+    ("Elegir una foto de perfil nueva", "Rediseño del portafolio", 8, 3),
+    ("Enviar un recordatorio si pasan cinco días sin tocar un proyecto", LONG_NAME, 21, 21),
+    ("Mostrar las decisiones recientes en el panel", LONG_NAME, 11, 5),
+    ("Permitir mover una idea de proyecto con un comando", LONG_NAME, 5, 4),
+    ("Hacer una receta de pan con masa madre", "Blog de cocina casera", 80, 75),
+    ("Anotar el costo por porción en cada receta", "Blog de cocina casera", 66, 66),
+    ("Usar un higrómetro de suelo en vez de estimar el riego", "Huerto urbano en el balcón", 29, 22),
+    ("Documentar el procedimiento de restauración de copias", "Migración del servidor casero", 77, 76),
+    ("Practicar el cambio entre acordes con un metrónomo", "Aprender guitarra", 19, 12),
 )
 
 
@@ -197,7 +231,40 @@ def _backdate(session: Session, project_id: int, days: int) -> None:
     session.get(Project, project_id).last_activity_at = utcnow() - timedelta(days=days)
 
 
-def seed(session: Session, settings: Settings, *, reset: bool) -> list:
+def _apply_history(session: Session, user_id: int, ids: dict[str, int]) -> None:
+    """Moves events back in time so the metrics have weeks to show. Services only stamp "now"."""
+    now = utcnow()
+    projects = {spec.name: spec for spec in PROJECTS}
+
+    for name, spec in projects.items():
+        done = session.scalars(
+            select(Milestone)
+            .where(Milestone.project_id == ids[name], Milestone.done.is_(True))
+            .order_by(Milestone.position)
+        ).all()
+        for milestone, days in zip(done, spec.done_days_ago, strict=True):
+            milestone.completed_at = now - timedelta(days=days)
+            milestone.created_at = milestone.completed_at - timedelta(days=1)
+
+    ideas = IdeaService(session, user_id)
+    # The base ideas that sit in a project take the project's last activity as their moment
+    for idea in session.scalars(select(Idea).where(Idea.user_id == user_id, Idea.project_id.is_not(None))):
+        idle = next(s.idle_days for s in PROJECTS if ids[s.name] == idea.project_id)
+        idea.created_at = idea.assigned_at = now - timedelta(days=idle or 0)
+
+    for content, project_name, captured, assigned in HISTORY_IDEAS:
+        idea = ideas.create(IdeaCreate(content=content, project_id=ids[project_name] if project_name else None))
+        idea.created_at = now - timedelta(days=captured)
+        idea.assigned_at = now - timedelta(days=assigned) if assigned is not None else None
+
+    # Projects start before their first event
+    for name, spec in projects.items():
+        if spec.done_days_ago:
+            session.get(Project, ids[name]).created_at = now - timedelta(days=max(spec.done_days_ago) + 14)
+    session.commit()
+
+
+def seed(session: Session, settings: Settings, *, reset: bool, history: bool = True) -> list:
     user = UserService.get_or_create_user(session, settings.telegram_allowed_user_id)
     has_data = session.scalar(select(Project.id).where(Project.user_id == user.id).limit(1)) is not None
     has_data = has_data or session.scalar(select(Idea.id).where(Idea.user_id == user.id).limit(1)) is not None
@@ -229,6 +296,9 @@ def seed(session: Session, settings: Settings, *, reset: bool) -> list:
     for content, project_name in IDEAS:
         ideas.create(IdeaCreate(content=content, project_id=ids[project_name] if project_name else None))
 
+    if history:
+        _apply_history(session, user.id, ids)
+
     for spec in PROJECTS:
         if spec.idle_days is not None:
             _backdate(session, ids[spec.name], spec.idle_days)
@@ -239,6 +309,7 @@ def seed(session: Session, settings: Settings, *, reset: bool) -> list:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Siembra datos de demo en una base aparte.")
     parser.add_argument("--reset", action="store_true", help="borra los datos de la base de demo antes de sembrar")
+    parser.add_argument("--no-history", action="store_true", help="solo el conjunto base, sin hitos ni ideas con historia")
     parser.add_argument("--database-url", help=f"por defecto DATABASE_URL del entorno o {DEFAULT_DATABASE_URL}")
     args = parser.parse_args(argv)
 
@@ -249,7 +320,9 @@ def main(argv: list[str] | None = None) -> int:
         if "projects" not in inspect(engine).get_table_names():
             raise SeedRefused("La base no tiene tablas. Ejecuta antes: alembic upgrade head")
         with Session(engine, expire_on_commit=False) as session:
-            result = seed(session, Settings(), reset=args.reset)
+            result = seed(session, Settings(), reset=args.reset, history=not args.no_history)
+            idea_count = session.scalar(select(func.count()).select_from(Idea))
+            done_count = session.scalar(select(func.count()).select_from(Milestone).where(Milestone.done.is_(True)))
     except SeedRefused as error:
         print(f"Seed cancelado: {error}", file=sys.stderr)
         return 1
@@ -257,7 +330,7 @@ def main(argv: list[str] | None = None) -> int:
     by_status: dict[str, int] = {}
     for project in result:
         by_status[project.status.value] = by_status.get(project.status.value, 0) + 1
-    print(f"Base de demo lista ({make_url(url).database}): {len(result)} proyectos {by_status}, {len(IDEAS)} ideas.")
+    print(f"Base de demo lista ({make_url(url).database}): {len(result)} proyectos {by_status}, {idea_count} ideas, {done_count} hitos hechos.")
     return 0
 
 

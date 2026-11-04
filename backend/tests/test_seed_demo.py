@@ -8,8 +8,9 @@ from sqlalchemy.orm import Session
 import app.models  # noqa: F401  (registers tables on Base.metadata)
 from app.config import Settings
 from app.db import Base
-from app.models import Idea, Project, ProjectStatus, User
+from app.models import Idea, Milestone, Project, ProjectStatus, User
 from app.schemas.project import ProjectCreate, ProjectUpdate
+from app.services.metrics_service import MetricsService
 from app.services.errors import ActiveLimitReached
 from app.services.project_service import ProjectService
 
@@ -37,7 +38,9 @@ def session(db_url):
 
 
 def seeded(session, **kwargs):
-    return seed_demo.seed(session, Settings(telegram_allowed_user_id=None), **{"reset": False, **kwargs})
+    # The base dataset by default; history tests opt in
+    options = {"reset": False, "history": False, **kwargs}
+    return seed_demo.seed(session, Settings(telegram_allowed_user_id=None), **options)
 
 
 def test_seed_covers_every_status_with_the_right_progress(session):
@@ -76,7 +79,9 @@ def test_seed_creates_four_inbox_ideas_and_four_assigned(session):
 
 def test_seed_never_exceeds_the_active_limit_and_the_fourth_is_rejected(session):
     # An environment with a bigger limit must not change the demo scenario
-    seed_demo.seed(session, Settings(telegram_allowed_user_id=None, max_active_projects=10), reset=False)
+    seed_demo.seed(
+        session, Settings(telegram_allowed_user_id=None, max_active_projects=10), reset=False, history=True
+    )
     settings = Settings(telegram_allowed_user_id=None, max_active_projects=3)
     user = session.scalar(select(User))
     service = ProjectService(session, user.id, settings)
@@ -141,3 +146,54 @@ def test_main_refuses_real_database_and_missing_tables(tmp_path, db_url, capsys)
     assert seed_demo.main(["--database-url", db_url]) == 0
     assert seed_demo.main(["--database-url", db_url]) == 1
     assert seed_demo.main(["--database-url", db_url, "--reset"]) == 0
+
+
+def test_history_keeps_the_nine_projects_and_adds_about_twenty_ideas(session):
+    projects = seeded(session, history=True)
+
+    assert len(projects) == 9
+    assert sum(1 for p in projects if p.status is ProjectStatus.ACTIVE) == 3
+    ideas = session.scalars(select(Idea)).all()
+    assert len(ideas) == 28
+    assert sum(1 for i in ideas if i.project_id is None) == 10
+
+
+def test_history_spreads_events_over_zero_to_eleven_weeks(session):
+    seeded(session, history=True)
+    user = session.scalar(select(User))
+
+    metrics = MetricsService(session, user.id, Settings(telegram_allowed_user_id=None)).get(12)
+
+    for series in (metrics.milestones_completed, metrics.ideas_captured, metrics.ideas_assigned):
+        assert sum(p.count for p in series) > 0
+        assert sum(1 for p in series if p.count) >= 5
+    assert metrics.ideas_captured[0].count > 0  # reaches the oldest of the 12 weeks
+    assert metrics.idea_totals.captured == 28
+    assert metrics.idea_totals.assigned == sum(p.count for p in metrics.ideas_assigned)
+
+
+def test_history_keeps_last_activity_coherent_with_the_events(session):
+    seeded(session, history=True)
+
+    for project in session.scalars(select(Project)):
+        events = [
+            m.completed_at for m in project.milestones if m.completed_at is not None
+        ] + [i.assigned_at for i in project.ideas if i.assigned_at is not None]
+        assert all(event <= project.last_activity_at for event in events), project.name
+    assert all(m.created_at <= m.completed_at for m in session.scalars(
+        select(Milestone).where(Milestone.completed_at.is_not(None))
+    ))
+
+
+def test_no_history_keeps_the_base_dataset(session):
+    seeded(session, history=False)
+
+    assert session.scalar(select(func.count()).select_from(Idea)) == 8
+    assert session.scalar(select(func.count()).select_from(Milestone).where(Milestone.done.is_(True))) == 13
+
+
+def test_main_no_history_flag(db_url, session, capsys):
+    assert seed_demo.main(["--database-url", db_url, "--no-history"]) == 0
+    assert "8 ideas" in capsys.readouterr().out
+    assert seed_demo.main(["--database-url", db_url, "--reset"]) == 0
+    assert "28 ideas" in capsys.readouterr().out
