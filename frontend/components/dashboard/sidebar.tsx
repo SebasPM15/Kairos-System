@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Bot, Lightbulb, LayoutGrid, Moon, PanelLeftClose, PanelLeftOpen, Sun, type LucideIcon } from 'lucide-react'
+import { Bot, ChartColumn, Lightbulb, LayoutGrid, Moon, PanelLeftClose, PanelLeftOpen, Sun, type LucideIcon } from 'lucide-react'
 import { Tooltip } from '@/components/ui/tooltip'
 import { useSidebar } from '@/lib/use-sidebar'
 import { useTheme } from '@/lib/use-theme'
@@ -10,6 +10,7 @@ import { ROUTES, useDashboard, type View } from './dashboard-context'
 export const NAV_ITEMS: { view: View; label: string; icon: LucideIcon }[] = [
   { view: 'projects', label: 'Proyectos', icon: LayoutGrid },
   { view: 'ideas', label: 'Ideas', icon: Lightbulb },
+  { view: 'metrics', label: 'Métricas', icon: ChartColumn },
   { view: 'bot', label: 'Bot', icon: Bot },
 ]
 
