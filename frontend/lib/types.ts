@@ -65,3 +65,29 @@ export type ExportSummary = {
 }
 
 export type PublicConfig = { max_active_projects: number }
+
+export type WeekCount = { week_start: string; count: number }
+
+export type ProjectProgress = {
+  id: number
+  name: string
+  status: ProjectStatus
+  progress: number
+  milestones_done: number
+  milestones_total: number
+  days_since_activity: number
+}
+
+export type Metrics = {
+  generated_at: string
+  timezone: string
+  weeks: number
+  // Monday of the current, still partial, week; it is the last entry of every weekly series
+  current_week_start: string
+  projects_by_status: { status: ProjectStatus; count: number }[]
+  project_progress: ProjectProgress[]
+  milestones_completed: WeekCount[]
+  ideas_captured: WeekCount[]
+  ideas_assigned: WeekCount[]
+  idea_totals: { captured: number; in_inbox: number; assigned: number }
+}

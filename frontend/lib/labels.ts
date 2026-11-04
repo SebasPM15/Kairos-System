@@ -20,6 +20,10 @@ const COUNT_FORMS = {
   projectExported: { one: 'proyecto exportado', other: 'proyectos exportados' },
   fileWritten: { one: 'archivo escrito', other: 'archivos escritos' },
   fileUnchanged: { one: 'sin cambios', other: 'sin cambios' },
+  week: { one: 'semana', other: 'semanas' },
+  ideaCaptured: { one: 'idea capturada', other: 'ideas capturadas' },
+  ideaAssigned: { one: 'idea asignada', other: 'ideas asignadas' },
+  milestoneCompleted: { one: 'hito completado', other: 'hitos completados' },
 } as const
 
 export type CountKey = keyof typeof COUNT_FORMS

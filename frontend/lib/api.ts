@@ -5,6 +5,7 @@ import type {
   ExportSummary,
   Idea,
   IdeaCreate,
+  Metrics,
   Milestone,
   MilestoneUpdate,
   Project,
@@ -48,6 +49,13 @@ function routeOf(method: string, path: string) {
   return `${method} ${path.replace(/\/\d+(?=\/|$)/g, '/:id')}`
 }
 
+// Lets a cache elsewhere know that something may have changed, without every caller telling it
+const mutationListeners = new Set<() => void>()
+export function onMutation(listener: () => void): () => void {
+  mutationListeners.add(listener)
+  return () => { mutationListeners.delete(listener) }
+}
+
 async function request<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
   const method = init.method ?? 'GET'
   let response: Response
@@ -66,6 +74,7 @@ async function request<T>(path: string, init: { method?: string; body?: unknown 
     const payload = await response.json().catch(() => null)
     throw new ApiError(response.status, payload?.detail ?? null, routeOf(method, path))
   }
+  if (method !== 'GET') mutationListeners.forEach((listener) => listener())
   if (response.status === 204) return undefined as T
   return response.json() as Promise<T>
 }
@@ -115,6 +124,10 @@ export const bot = {
 
 export const vault = {
   export: () => request<ExportSummary>('/export', { method: 'POST' }),
+}
+
+export const metrics = {
+  get: (weeks = 12) => request<Metrics>(`/metrics?weeks=${weeks}`),
 }
 
 export const getConfig = () => request<PublicConfig>('/config')
