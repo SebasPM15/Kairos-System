@@ -4,11 +4,18 @@ import { readFileSync } from 'node:fs'
 
 const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8')
 
-// Token values per theme; .light only overrides what it redefines
+// Token values per theme; .light only overrides what it redefines. Aliases (--chart-1: var(--accent-text))
+// are kept as { alias } and resolved against the finished theme, so .light's overrides carry through.
 function tokens(selector) {
   const start = css.indexOf(selector + ' {')
   const body = start < 0 ? '' : css.slice(css.indexOf('{', start) + 1, css.indexOf('}', start))
-  return Object.fromEntries([...body.matchAll(/--([\w-]+):\s*(#[0-9a-fA-F]{6})/g)].map(([, k, v]) => [k, v]))
+  return Object.fromEntries([...body.matchAll(/--([\w-]+):\s*(?:(#[0-9a-fA-F]{6})|var\(--([\w-]+)\))\s*;/g)]
+    .map(([, k, v, alias]) => [k, v ?? { alias }]))
+}
+function withAliases(theme) {
+  const out = { ...theme }
+  for (const [k, v] of Object.entries(out)) if (v && v.alias) out[k] = out[v.alias]
+  return out
 }
 // The Button ring is --accent-text at the opacity declared in --ring-halo, composited over the page
 function ringAlpha(selector) {
@@ -17,7 +24,10 @@ function ringAlpha(selector) {
   return match ? Number(match[1]) / 100 : 1
 }
 const dark = { ...tokens(':root'), ringAlpha: ringAlpha(':root') }
-const THEMES = { dark, light: { ...dark, ...tokens('.light'), ringAlpha: ringAlpha('.light') } }
+const THEMES = {
+  dark: withAliases(dark),
+  light: withAliases({ ...dark, ...tokens('.light'), ringAlpha: ringAlpha('.light') }),
+}
 
 // A color is a token name or { mix: token, alpha, over: token } (translucent tint over a background)
 // Thresholds: 4.5 text, 3 UI and large text
@@ -41,6 +51,10 @@ const PAIRS = [
   ...badge('warm', 'warm', 0.1, ['card']),
   ...badge('blue', 'blue', 0.1, ['card']),
   ...badge('done-text', 'foreground', 0.07, ['card', 'soft', 'focus-from']),
+  // Charts: bars 3:1 against every surface, text in the series colors 4.5:1; the hatched series
+  // (chart-2) is outlined at 1.5px, and that outline is what carries it, so it needs 3:1 too
+  ...['chart-1', 'chart-2'].flatMap((fg) => text(fg, ['background', 'card', 'soft'], UI)),
+  ...['chart-1', 'chart-2'].flatMap((fg) => text(fg, ['background', 'card', 'soft'])),
   // Button ring (ring-[var(--ring-halo)]) over the surface it sits on
   ...['background', 'card', 'soft'].map((over) => ({ fg: { mix: 'accent-text', alpha: 'ring', over }, bg: over, min: UI })),
 ]
