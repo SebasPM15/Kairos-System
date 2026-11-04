@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
@@ -37,6 +39,20 @@ class MilestoneRepository:
             .group_by(Milestone.project_id)
         )
         return {project_id: (int(d), int(total)) for project_id, d, total in rows}
+
+    def completion_times(self, user_id: int, since: datetime) -> list[datetime]:
+        """completed_at of the milestones currently done since `since`; reopened ones have none."""
+        return list(
+            self._session.scalars(
+                select(Milestone.completed_at)
+                .join(Project)
+                .where(
+                    Project.user_id == user_id,
+                    Milestone.done.is_(True),
+                    Milestone.completed_at >= since,
+                )
+            )
+        )
 
     def add(self, milestone: Milestone) -> None:
         self._session.add(milestone)

@@ -1,7 +1,17 @@
-from sqlalchemy import select
+from dataclasses import dataclass
+from datetime import datetime
+
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from app.models import Idea
+
+
+@dataclass(frozen=True)
+class IdeaTotals:
+    captured: int
+    in_inbox: int
+    assigned: int
 
 
 class IdeaRepository:
@@ -40,6 +50,32 @@ class IdeaRepository:
                 .order_by(Idea.created_at.desc(), Idea.id.desc())
             )
         )
+
+    def created_times(self, user_id: int, since: datetime) -> list[datetime]:
+        return list(
+            self._session.scalars(
+                select(Idea.created_at).where(Idea.user_id == user_id, Idea.created_at >= since)
+            )
+        )
+
+    def assigned_times(self, user_id: int, since: datetime) -> list[datetime]:
+        """assigned_at of ideas currently inside a project; inbox ideas never count."""
+        return list(
+            self._session.scalars(
+                select(Idea.assigned_at).where(
+                    Idea.user_id == user_id,
+                    Idea.project_id.is_not(None),
+                    Idea.assigned_at >= since,
+                )
+            )
+        )
+
+    def totals(self, user_id: int) -> IdeaTotals:
+        in_inbox = func.coalesce(func.sum(case((Idea.project_id.is_(None), 1), else_=0)), 0)
+        captured, inbox = self._session.execute(
+            select(func.count(), in_inbox).where(Idea.user_id == user_id)
+        ).one()
+        return IdeaTotals(captured=captured, in_inbox=int(inbox), assigned=captured - int(inbox))
 
     def add(self, idea: Idea) -> None:
         self._session.add(idea)

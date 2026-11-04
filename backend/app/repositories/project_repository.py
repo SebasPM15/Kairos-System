@@ -34,6 +34,15 @@ class ProjectRepository:
             .where(Project.user_id == user_id, Project.status == ProjectStatus.ACTIVE)
         )
 
+    def count_by_status(self, user_id: int) -> dict[ProjectStatus, int]:
+        """Statuses without projects are absent."""
+        rows = self._session.execute(
+            select(Project.status, func.count())
+            .where(Project.user_id == user_id)
+            .group_by(Project.status)
+        )
+        return {status: count for status, count in rows}
+
     def add(self, project: Project) -> None:
         self._session.add(project)
         self._session.flush()
