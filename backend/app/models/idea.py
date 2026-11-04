@@ -22,6 +22,8 @@ class Idea(Base):
     project_id: Mapped[int | None] = mapped_column(ForeignKey("projects.id", ondelete="SET NULL"))
     content: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
+    # When the idea last entered a project; NULL while in the inbox. Feeds metrics only.
+    assigned_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
 
     user: Mapped["User"] = relationship(back_populates="ideas")
     project: Mapped["Project | None"] = relationship(back_populates="ideas")
