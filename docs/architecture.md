@@ -39,7 +39,9 @@ Sin login ni contraseñas. Hoy opera un solo usuario; el modelo existe para pode
 
 **milestones**: id, project_id → projects, title, done (bool), position (int, orden manual dentro del proyecto), completed_at (nullable; lo pone el service al marcar hecho y lo limpia al reabrir), created_at.
 
-**ideas**: id, user_id → users (NOT NULL, `ON DELETE CASCADE`), project_id → projects (**nullable**, bandeja de entrada; `ON DELETE SET NULL`), content, created_at.
+**ideas**: id, user_id → users (NOT NULL, `ON DELETE CASCADE`), project_id → projects (**nullable**, bandeja de entrada; `ON DELETE SET NULL`), content, created_at, assigned_at (nullable, solo para métricas; no se expone en `IdeaRead` ni en el export).
+
+`ideas.assigned_at` lo mantiene `IdeaService`: se fija al crear la idea dentro de un proyecto (igual a `created_at`), al asignarla desde la bandeja y al moverla a OTRO proyecto; se borra al devolverla a la bandeja y no cambia al reasignarla al mismo proyecto ni al editar el texto. Si se borra el proyecto, la idea vuelve a la bandeja (`project_id` NULL) y el valor puede quedar; las métricas lo ignoran porque exigen `project_id IS NOT NULL`. La migración rellenó las ideas ya asignadas con su `created_at` (la fecha real de asignación no se guardaba).
 
 **decisions**: id, project_id → projects, title, rationale (el porqué), created_at.
 
@@ -55,6 +57,7 @@ Reglas:
 
 ## Ejecución local
 
+- `TIMEZONE` (zona IANA, por defecto `America/Guayaquil`) define las semanas de las métricas; una zona desconocida impide arrancar con un mensaje claro.
 - Docker Compose (backend + frontend): SQLite en volumen `/data`; vault de Obsidian como bind mount en `/vault` (`OBSIDIAN_VAULT_PATH=/vault` dentro del contenedor).
 - `NEXT_PUBLIC_API_URL` (la URL del backend que llama el navegador) la incrusta Next.js al compilar, no al arrancar: en Docker se pasa como build arg (`docker-compose.yml` -> `frontend/Dockerfile`, por defecto `http://localhost:8000`) y para cambiarla hay que reconstruir (`docker compose up -d --build`). El origen del frontend debe estar en `CORS_ORIGINS`.
 - Bot con long polling: sin webhooks ni URL pública.
@@ -148,6 +151,16 @@ Next.js (App Router) con `@base-ui/react` para modales, toasts, tooltips y campo
 | GET, POST | /projects/{id}/decisions | listar / crear |
 | GET | /bot/commands | catálogo de comandos del bot (`name`, `args`, `syntax`, `description`); estático, no llama a Telegram |
 | GET | /config | configuración pública para la UI: `max_active_projects` |
+| GET | /metrics?weeks=12 | métricas agregadas (ver «Métricas»); `weeks` entre 1 y 52, fuera de rango responde 422 |
 | POST | /export | exportar al vault de Obsidian; devuelve el resumen (proyectos, archivos escritos, sin cambios, carpetas huérfanas) |
+
+## Métricas
+
+`GET /metrics` (`routers/metrics.py` → `MetricsService` → repositories, todo filtrado por `user_id`, consultas agrupadas sin N+1: un test cuenta las sentencias SQL). Devuelve `generated_at`, `timezone`, `weeks`, `current_week_start`, `projects_by_status` (siempre las 4 entradas), `project_progress` (reutiliza `ProjectService.list()`, activos primero), tres series semanales (`milestones_completed`, `ideas_captured`, `ideas_assigned`, de la más antigua a la más reciente, longitud `weeks`) e `idea_totals` (`captured`, `in_inbox`, `assigned`).
+
+- **Semanas**: de lunes a domingo en la zona `TIMEZONE` (por defecto `America/Guayaquil`; se valida al arrancar con `ZoneInfo`, y `tzdata` es dependencia porque Windows no trae la base de zonas). Los instantes UTC se agrupan en Python (`services/weeks.py`), no con `strftime`, para que el cambio de hora no mueva los límites. Las semanas sin datos valen 0. La última es la semana en curso, parcial; la UI la marca.
+- **Hitos reabiertos**: un hito cuenta en la semana de su `completed_at` solo mientras siga hecho; al reabrirlo deja de contar y, si se vuelve a completar, cuenta en la nueva semana. Es una limitación aceptada (no hay historial de eventos) y la UI lo avisa.
+- **Ideas asignadas**: cuenta las ideas que hoy están dentro de un proyecto, en la semana de su `assigned_at`. Las asignadas antes de existir esta columna se cuentan en su semana de captura. La UI las llama «Ideas asignadas a un proyecto».
+- **Frontend** (`/metricas`): el estado vive en `DashboardProvider` (`lib/use-metrics.ts`), es perezoso y se invalida con cualquier mutación de la API (`onMutation` en `lib/api.ts`); al entrar a la página se pide si no hay datos o si tienen más de 60 s, y el botón «Actualizar» fuerza la consulta. Los gráficos son HTML y CSS (`components/metrics/`), con los valores como texto, `role="img"` y los datos completos en un `<details>` con tabla; a 760 px o menos se dibujan las últimas 8 semanas.
 
 Errores: 404 no existe, 409 límite de activos o vault no configurado / ruta fuera del vault, 422 validación (p. ej. sin próxima acción).

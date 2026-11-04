@@ -25,16 +25,19 @@
     - Pluralización correcta (`formatCount` / `pluralLabel`).
     - Rutas reales (`/proyectos`, `/ideas`, `/bot`) y tema persistido en `<html>`.
     - Controles y formularios con componentes propios sobre `@base-ui/react` (Field, Input, Textarea, Select, SearchInput, Checkbox, Button con estado de carga) y anillo de foco consistente.
-12. [ ] (siguiente) **Métricas**
-    - Sección con proyectos por estado, avance por proyecto, hitos completados por semana e ideas capturadas vs. promovidas.
-    - Evaluar `GET /metrics`: agregados calculados en el backend (router -> service -> repository), sin recalcular nada en el cliente.
+12. [x] **Métricas**
+    - Ruta `/metricas` con proyectos por estado, avance por proyecto, hitos completados por semana e ideas capturadas vs. asignadas a un proyecto.
+    - `GET /metrics?weeks=` (1 a 52, por defecto 12): agregados calculados en el backend (router -> service -> repository), semanas de lunes a domingo en `TIMEZONE`. Gráficos propios en HTML y CSS, sin dependencias nuevas salvo `tzdata` en el backend.
+    - `ideas.assigned_at` (migración con backfill) para contar las asignaciones por semana.
+
+**Optimización de bundle** (bloque propio tras el hito 12, ≈ 20 kB gzip): diálogos diferidos con `next/dynamic` y tooltip más ligero (CSS en lugar de Base UI).
 
 **Transversal** (sin hito propio)
 - i18n es/en (`next-intl`, a decidir).
 - SEO básico: metadata, `lang` y título por vista.
 - Auth cuando toque: `get_current_user` es el único punto a reemplazar.
 
-**Dependencias a justificar antes de instalar**: `next-intl` (i18n) y `recharts` (gráficos de métricas). Ninguna se añade sin justificarla antes. (`sonner` quedó descartado: los toasts usan `@base-ui/react/toast`.)
+**Dependencias a justificar antes de instalar**: `next-intl` (i18n). No se añade sin justificarla antes. (`sonner` quedó descartado: los toasts usan `@base-ui/react/toast`.)
 
 ## Después
 
