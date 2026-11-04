@@ -30,7 +30,7 @@
     - `GET /metrics?weeks=` (1 a 52, por defecto 12): agregados calculados en el backend (router -> service -> repository), semanas de lunes a domingo en `TIMEZONE`. Gráficos propios en HTML y CSS, sin dependencias nuevas salvo `tzdata` en el backend.
     - `ideas.assigned_at` (migración con backfill) para contar las asignaciones por semana.
 
-**Optimización de bundle** (bloque propio tras el hito 12, ≈ 20 kB gzip): diálogos diferidos con `next/dynamic` y tooltip más ligero (CSS en lugar de Base UI).
+**Optimización de bundle** [x] (bloque propio tras el hito 12): diálogos diferidos con `next/dynamic` (−11.5 kB en `/proyectos`) y el tooltip de Base UI cargado solo cuando el sidebar está colapsado (−23.9 kB). `/proyectos`: 251.4 → 216.0 kB.
 
 **Transversal** (sin hito propio)
 - i18n es/en (`next-intl`, a decidir).
