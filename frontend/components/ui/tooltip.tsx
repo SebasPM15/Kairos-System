@@ -25,7 +25,7 @@ function loadPopup() {
 // can actually show, i.e. with the sidebar collapsed. Until it arrives the bare trigger is rendered, and
 // if the trigger has keyboard focus at the swap (the collapse button itself) focus is put back on it.
 export function Tooltip({ label, disabled, render, children }: TooltipProps) {
-  const [Popup, setPopup] = useState<ComponentType<TooltipPopupProps> | null>(loaded)
+  const [Popup, setPopup] = useState<ComponentType<TooltipPopupProps> | null>(() => loaded)
   const [trigger, setTrigger] = useState<HTMLElement | null>(null)
   const restoreFocus = useRef(false)
 
