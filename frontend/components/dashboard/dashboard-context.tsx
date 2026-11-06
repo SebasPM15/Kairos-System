@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
-import type { Project, ProjectCreate } from '@/lib/types'
+import type { Project, ProjectCreate, PublicConfig, StaleAfterDays } from '@/lib/types'
 import { TOAST, errorMessage } from '@/lib/labels'
 import { toast } from '@/components/ui/toaster'
 import { useMetricsCache, type MetricsCache } from '@/lib/use-metrics'
@@ -23,6 +23,8 @@ export interface DashboardContextValue {
   activeCount: number
   // Null until /config answers; the counter then falls back to "N activos"
   maxActive: number | null
+  // Thresholds for "Sin avance", also from /config; null until it answers
+  staleAfterDays: StaleAfterDays | null
   retry: () => void
   // Silent refetch: keeps the current list on screen instead of flashing the skeleton
   refreshProjects: () => void
@@ -71,7 +73,7 @@ export function useDashboard(): DashboardContextValue {
 export function DashboardProvider({ children }: { children: ReactNode }) {
   const [load, setLoad] = useState<Load>({ state: 'loading' })
   const [attempt, setAttempt] = useState(0)
-  const [maxActive, setMaxActive] = useState<number | null>(null)
+  const [config, setConfig] = useState<PublicConfig | null>(null)
   const pathname = usePathname()
   const view = viewFromPath(pathname)
   // The selection remembers the route it was made on, so it dies when the route changes
@@ -87,7 +89,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const metrics = useMetricsCache()
 
   useEffect(() => {
-    api.getConfig().then((config) => setMaxActive(config.max_active_projects), () => undefined)
+    api.getConfig().then(setConfig, () => undefined)
   }, [attempt])
 
   useEffect(() => {
@@ -122,12 +124,14 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       : current)
   }
 
+  const maxActive = config?.max_active_projects ?? null
+  const staleAfterDays = config?.stale_after_days ?? null
   const projects = load.state === 'ready' ? load.projects : []
   const selected = projects.find((p) => p.id === selectedId) ?? null
   const activeCount = projects.filter((p) => p.status === 'active').length
 
   return <DashboardContext.Provider value={{
-    load, projects, activeCount, maxActive, retry, refreshProjects, createProject, updateProject, metrics,
+    load, projects, activeCount, maxActive, staleAfterDays, retry, refreshProjects, createProject, updateProject, metrics,
     showError,
     view, selectedId, selected, setSelectedId,
     creating, setCreating, exporting, setExporting,

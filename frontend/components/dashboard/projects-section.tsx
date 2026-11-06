@@ -8,7 +8,7 @@ const FILTER_LABELS: [string, string][] = [
 ]
 
 export function ProjectsSection() {
-  const { projects, filter, setFilter, sort, setSort, query, setQuery, setSelectedId } = useDashboard()
+  const { projects, staleAfterDays, filter, setFilter, sort, setSort, query, setQuery, setSelectedId } = useDashboard()
   const visible = projects
     .filter((p) => filter === 'all' || p.status === filter)
     .filter((p) => p.name.toLowerCase().includes(query.toLowerCase()))
@@ -32,6 +32,6 @@ export function ProjectsSection() {
         <option value="progress">Progreso</option>
       </Select></label>
     </div>
-    <ProjectList projects={visible} onOpen={setSelectedId} onClearSearch={query ? () => setQuery('') : undefined} />
+    <ProjectList projects={visible} onOpen={setSelectedId} onClearSearch={query ? () => setQuery('') : undefined} staleAfterDays={staleAfterDays} />
   </section>
 }

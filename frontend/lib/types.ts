@@ -64,7 +64,10 @@ export type ExportSummary = {
   orphans: string[]
 }
 
-export type PublicConfig = { max_active_projects: number }
+// Days without activity after which a project of that status counts as stalled; the backend owns them
+export type StaleAfterDays = { active: number; paused: number }
+
+export type PublicConfig = { max_active_projects: number; stale_after_days: StaleAfterDays }
 
 export type WeekCount = { week_start: string; count: number }
 
