@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
+from telegram.error import Conflict, NetworkError
 
 from app import main
 from app.bot import app as bot_app
@@ -82,3 +83,24 @@ def test_a_start_polling_failure_after_initialize_is_failed_too(monkeypatch):
     )
 
     assert (during.status, during.reason) == (BotState.FAILED, "OSError")
+
+
+@pytest.mark.parametrize("error_class", [NetworkError, Conflict])
+def test_polling_errors_keep_only_the_class_name_and_time(monkeypatch, error_class):
+    secret = "123:SECRET-TOKEN"
+    application = fake_application()
+    monkeypatch.setattr(bot_app, "create_bot", lambda *_: application)
+    monkeypatch.setattr(
+        main, "get_settings", lambda: Settings(telegram_bot_token=secret, telegram_allowed_user_id=1)
+    )
+    app = main.create_app()
+    app.state.bot_status = BotStatus(clock=lambda: NOW)
+
+    with TestClient(app):
+        callback = application.updater.start_polling.await_args.kwargs["error_callback"]
+        callback(error_class(f"failed for {secret}"))
+        snapshot = app.state.bot_status.snapshot
+
+    assert snapshot.status is BotState.RUNNING
+    assert (snapshot.last_error.type, snapshot.last_error.at) == (error_class.__name__, NOW)
+    assert secret not in repr(snapshot)

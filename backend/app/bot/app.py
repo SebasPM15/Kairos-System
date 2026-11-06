@@ -138,7 +138,7 @@ async def bot_lifespan(
         try:
             await application.initialize()
             await application.start()
-            await application.updater.start_polling()
+            await application.updater.start_polling(error_callback=status.polling_error)
             started = True
             status.running()
             logger.info("Telegram bot started")
