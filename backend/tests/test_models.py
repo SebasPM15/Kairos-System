@@ -1,3 +1,5 @@
+from datetime import date
+
 import pytest
 from sqlalchemy import create_engine, select
 from sqlalchemy.exc import IntegrityError
@@ -5,7 +7,17 @@ from sqlalchemy.orm import Session
 
 import app.models  # noqa: F401  (registers tables on Base.metadata)
 from app.db import Base
-from app.models import Decision, Idea, Milestone, Project, ProjectStatus, User
+from app.models import (
+    Decision,
+    Idea,
+    Milestone,
+    Project,
+    ProjectReminderPrefs,
+    ProjectStatus,
+    ReminderKind,
+    ReminderLog,
+    User,
+)
 
 
 @pytest.fixture
@@ -95,3 +107,32 @@ def test_foreign_keys_are_enforced(session):
 
     with pytest.raises(IntegrityError):
         session.commit()
+
+
+def test_reminder_log_allows_one_row_per_project_kind_and_local_day(session, user):
+    project = make_project(user)
+    session.add(project)
+    session.commit()
+    day = date(2026, 11, 5)
+    session.add(ReminderLog(user_id=user.id, project_id=project.id, kind=ReminderKind.STALLED, local_date=day))
+    session.add(ReminderLog(user_id=user.id, project_id=project.id, kind=ReminderKind.READY_TO_FINISH, local_date=day))
+    session.commit()
+
+    session.add(ReminderLog(user_id=user.id, project_id=project.id, kind=ReminderKind.STALLED, local_date=day))
+    with pytest.raises(IntegrityError):
+        session.commit()
+
+
+def test_deleting_a_project_deletes_its_reminder_rows(session, user):
+    project = make_project(user)
+    session.add(project)
+    session.commit()
+    session.add(ReminderLog(user_id=user.id, project_id=project.id, kind=ReminderKind.STALLED, local_date=date(2026, 11, 5)))
+    session.add(ProjectReminderPrefs(project_id=project.id, user_id=user.id, muted=True))
+    session.commit()
+
+    session.delete(project)
+    session.commit()
+
+    assert session.scalar(select(ReminderLog)) is None
+    assert session.scalar(select(ProjectReminderPrefs)) is None

@@ -91,3 +91,34 @@ def test_assigned_at_downgrade_drops_the_column_and_keeps_ideas(alembic):
         count = connection.execute("SELECT COUNT(*) FROM ideas").fetchone()[0]
     assert "assigned_at" not in columns
     assert count == 1
+
+
+def test_reminder_tables_are_created_with_cascading_foreign_keys(alembic):
+    assert alembic("upgrade", "head").returncode == 0
+
+    with sqlite3.connect(alembic.database) as connection:
+        for table in ("reminder_log", "project_reminder_prefs"):
+            actions = {row[3]: row[6] for row in connection.execute(f"PRAGMA foreign_key_list({table})")}
+            assert actions == {"user_id": "CASCADE", "project_id": "CASCADE"}, table
+        indexes = {row[1] for row in connection.execute("PRAGMA index_list(reminder_log)")}
+    assert "ix_reminder_log_user_id_sent_at" in indexes
+
+
+def test_reminder_upgrade_keeps_existing_data_and_downgrade_removes_only_the_new_tables(alembic):
+    assert alembic("upgrade", "c4e8a1d36f72").returncode == 0
+    with sqlite3.connect(alembic.database) as connection:
+        connection.execute("INSERT INTO users (id, created_at) VALUES (1, '2026-01-01 00:00:00')")
+        connection.execute(
+            "INSERT INTO projects (id, user_id, name, slug, description, status, created_at, last_activity_at) "
+            "VALUES (1, 1, 'P', 'p', '', 'idea', '2026-01-01 00:00:00', '2026-01-01 00:00:00')"
+        )
+    assert alembic("upgrade", "head").returncode == 0
+
+    result = alembic("downgrade", "c4e8a1d36f72")
+
+    assert result.returncode == 0, result.stderr
+    with sqlite3.connect(alembic.database) as connection:
+        tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+        projects = connection.execute("SELECT COUNT(*) FROM projects").fetchone()[0]
+    assert not {"reminder_log", "project_reminder_prefs"} & tables
+    assert projects == 1
