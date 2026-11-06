@@ -41,7 +41,11 @@
 
 ## Después
 
-- **v0.2** — Recordatorios y alertas de proyectos sin avance. Incluye un endpoint de estado del bot para mostrar un banner de «bot caído» (hoy el backend no expone si el bot arrancó).
-- **v0.3** — Capa de IA: clasificar ideas por proyecto, proponer hitos, resumen semanal (el usuario confirma).
+- **v0.2** [x] — Recordatorios y alertas de proyectos sin avance, y señal de «bot caído».
+    - Alertas calculadas en vivo en el backend (`stalled` para activos a los 7 días y pausados a los 30; `ready_to_finish` para activos con todos los hitos hechos), con umbrales en `Settings` y expuestos en `GET /config`.
+    - Un resumen diario por Telegram (tarea asyncio en el lifespan, sin dependencias nuevas) con máximo 5 proyectos, botones Posponer 7 d / Silenciar y comandos `/recordatorios`, `/posponer`, `/silenciar` y `/reactivar`. Anti-ruido: un resumen por día local, repeticiones limitadas, horas de silencio en `TIMEZONE`.
+    - `GET /reminders` y `PATCH /projects/{id}/reminders`; bloque «Necesitan atención» en `/proyectos` con posponer, silenciar y reactivar.
+    - `GET /bot/status` (`disabled | running | failed | stopped`, solo códigos y nombres de excepción), tarjeta de estado en la pestaña Bot y banner persistente de bot caído.
+- **v0.3** — Capa de IA: clasificar ideas por proyecto, proponer hitos, resumen semanal (el usuario confirma). Aplazados desde v0.2: el recordatorio de hito sin completar durante mucho tiempo (hoy `created_at` de los hitos pendientes no distingue casos) y el de activo sin próxima acción (el service ya impide que exista; sería un chequeo de integridad).
 - **v0.4** — Búsqueda semántica con embeddings.
 - **v1.0** — Agentes especializados con un orquestador.

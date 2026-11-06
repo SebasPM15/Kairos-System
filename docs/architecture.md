@@ -9,7 +9,7 @@ Next.js ──HTTP──► routers/ ─┘        │
                                      └──► exporters/ ──► Vault Obsidian (Markdown)
 ```
 
-Todo corre en local. Un solo proceso: FastAPI + bot de Telegram (long polling). Routers y handlers son delgados; la lógica (límite de activos, porcentaje, actualización de `last_activity_at`) vive en `services/`. Los schemas (Pydantic) definen el contrato de la API.
+Todo corre en local. Un solo proceso: FastAPI + bot de Telegram (long polling) + una tarea asyncio que envía el resumen diario de recordatorios (ver «Recordatorios»). Routers y handlers son delgados; la lógica (límite de activos, porcentaje, actualización de `last_activity_at`) vive en `services/`. Los schemas (Pydantic) definen el contrato de la API.
 
 ## Esquema de BD
 
@@ -45,6 +45,10 @@ Sin login ni contraseñas. Hoy opera un solo usuario; el modelo existe para pode
 
 **decisions**: id, project_id → projects, title, rationale (el porqué), created_at.
 
+**reminder_log** (solo se agrega): id, user_id → users (`ON DELETE CASCADE`), project_id → projects (`ON DELETE CASCADE`), kind (`stalled` | `ready_to_finish`), sent_at (UTC), local_date (el día del envío en `TIMEZONE`). `UNIQUE(user_id, project_id, kind, local_date)` e índice `(user_id, sent_at)`. Guarda lo que el bot ya dijo; las alertas en sí no se guardan.
+
+**project_reminder_prefs**: project_id (PK, → projects, `ON DELETE CASCADE`), user_id → users (`ON DELETE CASCADE`), snoozed_until (UTC, nullable), muted (bool). Sin fila significa los valores por defecto. Se creó sin tocar `projects`. Ninguna de las dos tablas se exporta al vault.
+
 Relaciones: un usuario tiene muchos proyectos (al borrarlo se borran en cascada, y de ahí hitos y decisiones). Un proyecto tiene muchos hitos, ideas y decisiones. Al borrar un proyecto: `milestones` y `decisions` en cascada; `ideas` con `ON DELETE SET NULL` (vuelven a la bandeja de entrada, conservando su `user_id`). El porcentaje no se guarda: `completed / total` de hitos (0 si no hay hitos).
 
 Reglas:
@@ -57,7 +61,8 @@ Reglas:
 
 ## Ejecución local
 
-- `TIMEZONE` (zona IANA, por defecto `America/Guayaquil`) define las semanas de las métricas; una zona desconocida impide arrancar con un mensaje claro.
+- `TIMEZONE` (zona IANA, por defecto `America/Guayaquil`) define las semanas de las métricas, el día de los recordatorios y sus horas de silencio; una zona desconocida impide arrancar con un mensaje claro.
+- Recordatorios (todos con validación en `Settings`): `REMINDERS_ENABLED` (true), `STALE_DAYS_ACTIVE` (7), `STALE_DAYS_PAUSED` (30), `REMINDER_REPEAT_DAYS` (7), `REMINDER_MAX_REPEATS` (3), `REMINDER_QUIET_START_HOUR` (21) y `REMINDER_QUIET_END_HOUR` (8; el rango puede cruzar la medianoche y el inicio no puede ser igual al fin). El tick de 30 minutos, el máximo de 5 proyectos por resumen y la espera de 60 s al arrancar son constantes, no ajustes.
 - Docker Compose (backend + frontend): SQLite en volumen `/data`; vault de Obsidian como bind mount en `/vault` (`OBSIDIAN_VAULT_PATH=/vault` dentro del contenedor).
 - `NEXT_PUBLIC_API_URL` (la URL del backend que llama el navegador) la incrusta Next.js al compilar, no al arrancar: en Docker se pasa como build arg (`docker-compose.yml` -> `frontend/Dockerfile`, por defecto `http://localhost:8000`) y para cambiarla hay que reconstruir (`docker compose up -d --build`). El origen del frontend debe estar en `CORS_ORIGINS`.
 - Bot con long polling: sin webhooks ni URL pública.
@@ -70,9 +75,11 @@ Long polling, en el mismo proceso que FastAPI. Los handlers son delgados: valida
 
 **Estructura** (`app/bot/`): `catalog.py` (catálogo de comandos, ver abajo), `parsing.py` (funciones puras de argumentos), `messages.py` (textos en español, traducción de estados y el único mapper de errores de dominio a mensajes), `commands.py` (una función por comando: `(session, user_id, args) -> texto`, usa los services), `app.py` (handlers async finos, filtro de usuario y ciclo de vida). Cada comando abre su propia sesión y corre en un hilo (`asyncio.to_thread`); el usuario sale de `UserService.get_or_create_user`, igual que `get_current_user`.
 
-**Seguridad**: solo atiende al usuario cuyo ID está en `TELEGRAM_ALLOWED_USER_ID`. Los mensajes y callbacks de cualquier otro usuario se ignoran en silencio (sin respuesta). El token nunca se registra: los loggers `httpx`/`httpcore` se suben a WARNING (sus URLs llevan el token) y los fallos de arranque solo registran el nombre de la excepción.
+**Seguridad**: solo atiende al usuario cuyo ID está en `TELEGRAM_ALLOWED_USER_ID`. Los mensajes y callbacks de cualquier otro usuario (incluidos los botones del resumen) se ignoran en silencio (sin respuesta). El token nunca se registra: los loggers `httpx`, `httpcore` y `telegram.ext.ExtBot` se suben a WARNING (las URLs de la API llevan el token; PTB registra la suya en DEBUG al construir el bot) y los fallos solo registran el nombre de la excepción.
 
-**Ciclo de vida**: el bot arranca y se detiene en el `lifespan` de `create_app`. Sin `TELEGRAM_BOT_TOKEN` o `TELEGRAM_ALLOWED_USER_ID` no arranca y se registra un aviso; si falla al iniciar, se registra y la API sigue. Long polling exige un solo proceso/worker (no usar `--workers`).
+**Ciclo de vida**: el bot arranca y se detiene en el `lifespan` de `create_app`. Sin `TELEGRAM_BOT_TOKEN` o `TELEGRAM_ALLOWED_USER_ID` no arranca y se registra un aviso; si falla al iniciar, se registra y la API sigue. Long polling exige un solo proceso/worker (no usar `--workers`). El scheduler de recordatorios arranca después del bot y se detiene antes; si el bot no está activo no entrega nada.
+
+**Estado del bot** (`app/bot/status.py`): `BotStatus` vive en `app.state.bot_status` y guarda instantáneas inmutables (`status`, `reason`, `started_at`, `last_message_sent_at`, `last_error`). `bot_lifespan` registra cada transición (`disabled` con `missing_token` o `missing_user_id`; `running`; `failed` con el nombre de la excepción; `stopped`), el `error_callback` de `start_polling` guarda solo el nombre y la hora del último error de conexión (PTB lo repite mientras dura la caída, y no se borra al recuperarse: la UI mira los últimos 5 minutos) y un único `_reply` más el `Notifier` anotan el último mensaje enviado. Nunca se guarda un mensaje de error, una URL ni el token. `GET /bot/status` lo expone sin autenticación, como `/health`: es estado del proceso, no de un usuario.
 
 **Comandos**: el proyecto se identifica por su slug, antes de los dos puntos. Solo los hitos usan ID numérico.
 
@@ -87,6 +94,10 @@ Long polling, en el mismo proceso que FastAPI. Los handlers son delgados: valida
 | `/decision <slug>: <título> \| <porqué>` | registra una decisión con su razón |
 | `/pausa <slug>` | pasa el proyecto a `paused` y conserva la próxima acción; libera un cupo de activos |
 | `/terminar <slug>` | pasa el proyecto a `done` |
+| `/recordatorios` | lista las alertas actuales y, aparte, los proyectos pospuestos o silenciados |
+| `/posponer <slug>: <días>` | pospone los recordatorios de un proyecto de 1 a 30 días |
+| `/silenciar <slug>` | silencia los recordatorios de un proyecto hasta que se reactiven |
+| `/reactivar <slug>` | quita el silencio y el aplazamiento |
 | `/exportar` | exporta al vault de Obsidian y responde con el resumen (proyectos, archivos escritos, sin cambios, carpetas huérfanas) |
 | `/ayuda`, `/start` | lista de comandos con su sintaxis |
 
@@ -95,6 +106,19 @@ Long polling, en el mismo proceso que FastAPI. Los handlers son delgados: valida
 **Catálogo** (`app/bot/catalog.py`): `COMMAND_CATALOG` es la única fuente de verdad de los comandos (`name`, `args` y `description` en español; `syntax` se calcula como `/<name> <args>`). De él salen `/ayuda` y `/start` (`messages.HELP`), el menú de Telegram y `GET /bot/commands`. Los handlers de `app.py` se registran recorriendo el catálogo (`/hecho` tiene handler propio y `/start` es un alias de `/ayuda` fuera del catálogo), así que un comando nuevo se declara en el catálogo y en `commands.py`; un test falla si falta uno de los dos. Al arrancar, `register_menu` llama a `set_my_commands` con el catálogo; si falla solo se registra el nombre de la excepción y el bot sigue.
 
 **Respuestas**: en español, sin emojis o mínimos. Los errores de dominio (límite de activos, proyecto inexistente, falta de próxima acción, hito inexistente) los traduce `messages.error_message`. Las respuestas se truncan a 4096 caracteres.
+
+## Recordatorios
+
+`ReminderService` (con `ReminderRepository`, todo filtrado por `user_id`; el service valida el proyecto con `ProjectService`, así que uno ajeno es 404) calcula las alertas en vivo cada vez que se piden. Nada se encola: un proceso apagado una semana no acumula nada.
+
+- **Tipos**: `stalled` (proyecto `active` con `days_idle >= STALE_DAYS_ACTIVE`, o `paused` con `>= STALE_DAYS_PAUSED`; `idea` y `done` no alertan) y `ready_to_finish` (`active` con hitos y todos hechos). Si un proyecto cumple ambos se muestra solo `ready_to_finish`. `days_idle` es `idle_days()` (`models/base.py`), la misma fórmula de `days_since_activity`, con reloj inyectable. Pausar un proyecto es actividad: reinicia el contador. Aplazados a v0.3: hito sin completar durante mucho tiempo y activo sin próxima acción (no puede existir).
+- **Posponer y silenciar** (`project_reminder_prefs`): se respetan en el dashboard y en Telegram. Los pospuestos con la fecha vigente y los silenciados salen en `suppressed` (aunque el proyecto no alerte hoy), para poder reactivarlos.
+- **Resumen diario** (`services/reminder_digest.py`): `plan_digest` devuelve `None` si los recordatorios están desactivados, si es hora de silencio (`REMINDER_QUIET_*` en `TIMEZONE`, cruza la medianoche), si ya hay filas de `reminder_log` de hoy para el usuario o si no hay nada que decir. Lista como máximo 5 proyectos activos (de más viejo a más nuevo) con botones Posponer 7 d y Silenciar, y una línea resumen para los pausados («y N proyectos en pausa llevan más de 30 días: /recordatorios»); lo que no cabe espera a otro día. Textos en `bot/messages.py`.
+- **Anti-ruido**: un resumen por usuario y día local. `stalled` se repite cada `REMINDER_REPEAT_DAYS` y como máximo `REMINDER_MAX_REPEATS` veces desde la última actividad; `ready_to_finish` se avisa una vez por cada `last_activity_at`. Cualquier actividad reinicia la cuenta; después solo queda el dashboard. Tras días apagado sale un solo resumen con tope de 5.
+- **Orden de envío**: primero se envía y solo si Telegram acepta se escribe `reminder_log`. Si falla (red, `RetryAfter`, `Forbidden` si nunca se escribió `/start`) no queda rastro, se reintenta en el siguiente tick y `last_error` guarda el tipo. El `UNIQUE` evita filas duplicadas, no un doble envío (ver «Scheduler»).
+- **Scheduler** (`reminders/scheduler.py`): una tarea asyncio creada en el `lifespan` después del bot y cancelada antes de pararlo. Espera 60 s, comprueba cada 30 min, solo entrega con el bot en `running` y para el usuario de `TELEGRAM_ALLOWED_USER_ID`; las consultas a la BD corren en hilos (`asyncio.to_thread`), una sesión por fase. Reloj y `sleep` inyectables: los tests no esperan. `python-telegram-bot` no trae `JobQueue` (haría falta `[job-queue]`, que instala APScheduler), así que no se añadió ninguna dependencia. Con `uvicorn --reload` o un reinicio, el bot se detiene (el updater espera a que termine el `getUpdates` en curso, ≈ 2 s con el Telegram falso de las pruebas y hasta ≈ 10 s con el de verdad), el proceso nuevo espera 60 s y el resumen de hoy no se repite porque ya está en `reminder_log`. Con dos procesos sobre la misma BD (que además competirían por `getUpdates` con el mismo token: `Conflict`) no se vio un doble envío en 4 pruebas, pero la ventana existe: entre planificar y escribir el log solo está el tiempo de envío.
+- **Fuera del export**: `reminder_log` y `project_reminder_prefs` nunca llegan al vault (hay un test).
+- **Multiusuario**: las tablas y el service ya llevan `user_id`; el scheduler atiende hoy al usuario permitido del bot. Los umbrales serían una tabla `user_settings` por encima de los valores del `.env`.
 
 ## Export al vault de Obsidian
 
@@ -133,6 +157,8 @@ Next.js (App Router) con `@base-ui/react` para modales, toasts, tooltips y campo
 - **Rutas**: `/` redirige a `/proyectos`; `/proyectos`, `/ideas` y `/bot` viven en el grupo `app/(app)/`. Su layout monta una sola vez `DashboardProvider` (proyectos, `/config`, filtros, búsqueda, selección del drawer, diálogos de crear y exportar), `AppShell` (sidebar, header con las acciones, `main#contenido`, drawer y diálogos) y `Toaster`. La vista activa se deriva de la URL, así que los datos, el texto del buscador y los filtros sobreviven a la navegación; el drawer se cierra al cambiar de ruta.
 - **Tema**: la clase `light` o `dark` va en `<html>`. Un script inline en `<head>` (`lib/prefs.ts`) la fija antes del primer pintado leyendo `localStorage['kairos-theme']` (por defecto oscuro, sin mirar `prefers-color-scheme`); `useTheme` la lee y la escribe, y si el almacenamiento falla todo sigue en oscuro.
 - **Sidebar**: 220 px expandida y 64 px colapsada; por defecto expandida desde 1200 px y colapsada entre 761 y 1199 px. La elección del usuario (`localStorage['kairos-sidebar']`: `expanded` | `collapsed`) llega como `data-sidebar` en `<html>` desde el mismo script y el CSS la lee. A 760 px o menos el sidebar se oculta y se abre desde una hamburguesa en un Dialog lateral izquierdo.
+- **Umbrales y alertas**: el cliente no define umbrales; lee `stale_after_days` de `GET /config` (`lib/project-health.ts`) y la tarjeta del proyecto muestra «Sin avance» cuando está estancado. El bloque «Necesitan atención» (`components/reminders/`, arriba de `/proyectos`) lista `GET /reminders` con Abrir, Posponer 7 días y Silenciar, y una lista plegable «Pospuestos y silenciados (N)» con Reactivar; el estado vive en `DashboardProvider` (`lib/use-reminders.ts`), perezoso y refrescado tras cualquier mutación mientras el bloque está en pantalla. Una mutación fallida va a un toast y el botón queda donde estaba.
+- **Estado del bot**: `lib/use-bot-status.ts` consulta `GET /bot/status` al montar el shell, cada minuto con la pestaña visible y al recuperar el foco. La pestaña Bot tiene una tarjeta de estado con «Comprobar de nuevo». El banner del shell (`components/dashboard/bot-banner.tsx`, en el flujo bajo el header, no `fixed`) aparece con `failed` o con `running` y un `last_error` de los últimos 5 minutos, nunca con `disabled`, y desaparece al volver a `running`; no es un toast porque es persistente y la solución es del usuario.
 - **Modales**: `components/ui/dialog.tsx` con variantes `modal` y `side` (derecha para el drawer del proyecto, izquierda para el menú móvil); pantalla completa a 760 px o menos. Los toasts (`ui/toaster.tsx`) son solo para confirmaciones efímeras; lo que exige acción del usuario va en línea.
 
 ## Endpoints
@@ -150,7 +176,10 @@ Next.js (App Router) con `@base-ui/react` para modales, toasts, tooltips y campo
 | PATCH, DELETE | /ideas/{id} | asignar a proyecto / borrar |
 | GET, POST | /projects/{id}/decisions | listar / crear |
 | GET | /bot/commands | catálogo de comandos del bot (`name`, `args`, `syntax`, `description`); estático, no llama a Telegram |
-| GET | /config | configuración pública para la UI: `max_active_projects` |
+| GET | /bot/status | estado del bot: `status` (`disabled`, `running`, `failed`, `stopped`), `reason`, `started_at`, `last_message_sent_at`, `last_error {type, at}`; sin autenticación |
+| GET | /config | configuración pública para la UI: `max_active_projects` y `stale_after_days {active, paused}` |
+| GET | /reminders | `alerts` (calculadas en vivo, de la más inactiva a la menos) y `suppressed` (pospuestas o silenciadas, con `snoozed_until` y `muted`) |
+| PATCH | /projects/{id}/reminders | `{snooze_days?: 1..30 \| null, muted?: bool}`; `snooze_days: null` quita el aplazamiento; 404 si el proyecto es de otro usuario |
 | GET | /metrics?weeks=12 | métricas agregadas (ver «Métricas»); `weeks` entre 1 y 52, fuera de rango responde 422 |
 | POST | /export | exportar al vault de Obsidian; devuelve el resumen (proyectos, archivos escritos, sin cambios, carpetas huérfanas) |
 
