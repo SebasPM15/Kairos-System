@@ -104,3 +104,62 @@ def test_polling_errors_keep_only_the_class_name_and_time(monkeypatch, error_cla
     assert snapshot.status is BotState.RUNNING
     assert (snapshot.last_error.type, snapshot.last_error.at) == (error_class.__name__, NOW)
     assert secret not in repr(snapshot)
+
+
+def test_endpoint_reports_a_failed_start_without_the_secret(monkeypatch):
+    secret = "123:SECRET-TOKEN"
+    application = fake_application(initialize=AsyncMock(side_effect=RuntimeError(f"bad {secret}")))
+    application.updater.running = False
+    application.running = False
+    monkeypatch.setattr(bot_app, "create_bot", lambda *_: application)
+    monkeypatch.setattr(
+        main, "get_settings", lambda: Settings(telegram_bot_token=secret, telegram_allowed_user_id=1)
+    )
+
+    with TestClient(main.create_app()) as client:
+        response = client.get("/bot/status")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "failed",
+        "reason": "RuntimeError",
+        "started_at": None,
+        "last_message_sent_at": None,
+        "last_error": None,
+    }
+    assert secret not in response.text
+
+
+def test_endpoint_reports_a_disabled_bot(monkeypatch):
+    monkeypatch.setattr(
+        main, "get_settings", lambda: Settings(telegram_bot_token="", telegram_allowed_user_id=1)
+    )
+
+    with TestClient(main.create_app()) as client:
+        body = client.get("/bot/status").json()
+
+    assert (body["status"], body["reason"]) == ("disabled", "missing_token")
+
+
+def test_endpoint_reports_a_running_bot_with_its_last_polling_error(monkeypatch):
+    application = fake_application()
+    monkeypatch.setattr(bot_app, "create_bot", lambda *_: application)
+    monkeypatch.setattr(
+        main, "get_settings", lambda: Settings(telegram_bot_token="123:fake", telegram_allowed_user_id=1)
+    )
+    app = main.create_app()
+    app.state.bot_status = BotStatus(clock=lambda: NOW)
+
+    with TestClient(app) as client:
+        application.updater.start_polling.await_args.kwargs["error_callback"](Conflict("x"))
+        body = client.get("/bot/status").json()
+
+    assert body["status"] == "running"
+    assert body["started_at"].startswith("2026-11-05T12:00:00")
+    assert body["last_error"]["type"] == "Conflict"
+    assert body["last_error"]["at"].startswith("2026-11-05T12:00:00")
+
+
+def test_status_is_available_without_the_lifespan(client):
+    # The shared client does not run the lifespan, so the bot never started
+    assert client.get("/bot/status").json()["status"] == "stopped"
