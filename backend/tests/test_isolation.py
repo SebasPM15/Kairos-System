@@ -30,6 +30,7 @@ FOREIGN_REQUESTS = [
     ("GET", "/projects/{pid}/decisions", None),
     ("POST", "/projects/{pid}/decisions", {"title": "intruder", "rationale": "x"}),
     ("DELETE", "/decisions/{did}", None),
+    ("PATCH", "/projects/{pid}/reminders", {"muted": True}),
 ]
 
 
