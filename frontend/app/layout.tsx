@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from 'next'
+import { Inter } from 'next/font/google'
 import './globals.css'
 import { PREFS_SCRIPT } from '@/lib/prefs'
+
+const sans = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap' })
 
 export const metadata: Metadata = {
   title: 'Kairos — Seguimiento de proyectos',
@@ -24,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html lang="es" className={sans.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: PREFS_SCRIPT }} />
       </head>
