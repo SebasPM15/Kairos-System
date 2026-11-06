@@ -8,6 +8,11 @@ def utcnow() -> datetime:
     return datetime.now(UTC)
 
 
+def idle_days(since: datetime, now: datetime) -> int:
+    """Whole days elapsed; the single definition behind days_since_activity and the reminders."""
+    return (now - since).days
+
+
 class UTCDateTime(TypeDecorator):
     """Timezone-aware UTC datetime; SQLite drops tzinfo, so it is restored on read."""
 

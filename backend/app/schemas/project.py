@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from app.models import Project, ProjectStatus
+from app.models.base import idle_days
 
 
 class ProjectCreate(BaseModel):
@@ -53,4 +54,4 @@ class ProjectRead(BaseModel):
     @computed_field
     @property
     def days_since_activity(self) -> int:
-        return (datetime.now(UTC) - self.last_activity_at).days
+        return idle_days(self.last_activity_at, datetime.now(UTC))
