@@ -11,6 +11,9 @@ import type {
   MilestoneUpdate,
   Project,
   ProjectCreate,
+  ReminderPrefs,
+  ReminderPrefsUpdate,
+  Reminders,
   PublicConfig,
   ProjectUpdate,
 } from './types'
@@ -130,6 +133,12 @@ export const vault = {
 
 export const metrics = {
   get: (weeks = 12) => request<Metrics>(`/metrics?weeks=${weeks}`),
+}
+
+export const reminders = {
+  list: () => request<Reminders>('/reminders'),
+  update: (projectId: number, data: ReminderPrefsUpdate) =>
+    request<ReminderPrefs>(`/projects/${projectId}/reminders`, { method: 'PATCH', body: data }),
 }
 
 export const getConfig = () => request<PublicConfig>('/config')

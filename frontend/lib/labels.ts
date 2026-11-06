@@ -22,6 +22,7 @@ const COUNT_FORMS = {
   fileWritten: { one: 'archivo escrito', other: 'archivos escritos' },
   fileUnchanged: { one: 'sin cambios', other: 'sin cambios' },
   week: { one: 'semana', other: 'semanas' },
+  alert: { one: 'alerta', other: 'alertas' },
   ideaCaptured: { one: 'idea capturada', other: 'ideas capturadas' },
   ideaAssigned: { one: 'idea asignada', other: 'ideas asignadas' },
   milestoneCompleted: { one: 'hito completado', other: 'hitos completados' },

@@ -7,6 +7,7 @@ import { TOAST, errorMessage } from '@/lib/labels'
 import { toast } from '@/components/ui/toaster'
 import { useBotStatus, type BotStatusCache } from '@/lib/use-bot-status'
 import { useMetricsCache, type MetricsCache } from '@/lib/use-metrics'
+import { useRemindersCache, type RemindersCache } from '@/lib/use-reminders'
 import * as api from '@/lib/api'
 
 export type View = 'projects' | 'ideas' | 'metrics' | 'bot'
@@ -33,6 +34,7 @@ export interface DashboardContextValue {
   updateProject: (project: Project) => void
   metrics: MetricsCache
   botStatus: BotStatusCache
+  reminders: RemindersCache
 
   // Mutation failures (create, assign, delete...) surface as an error toast; the form keeps what was typed
   showError: (error: unknown) => void
@@ -90,6 +92,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [query, setQuery] = useState('')
   const metrics = useMetricsCache()
   const botStatus = useBotStatus()
+  const reminders = useRemindersCache()
 
   useEffect(() => {
     api.getConfig().then(setConfig, () => undefined)
@@ -134,7 +137,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const activeCount = projects.filter((p) => p.status === 'active').length
 
   return <DashboardContext.Provider value={{
-    load, projects, activeCount, maxActive, staleAfterDays, retry, refreshProjects, createProject, updateProject, metrics, botStatus,
+    load, projects, activeCount, maxActive, staleAfterDays, retry, refreshProjects, createProject, updateProject, metrics, botStatus, reminders,
     showError,
     view, selectedId, selected, setSelectedId,
     creating, setCreating, exporting, setExporting,

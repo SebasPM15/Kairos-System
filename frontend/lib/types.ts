@@ -68,6 +68,41 @@ export type BotStatus = {
   last_error: { type: string; at: string } | null
 }
 
+export type ReminderKind = 'stalled' | 'ready_to_finish'
+
+// A project that needs attention right now; computed by the backend, never stored
+export type ReminderAlert = {
+  project_id: number
+  slug: string
+  name: string
+  status: ProjectStatus
+  kind: ReminderKind
+  days_idle: number
+  // Days that triggered a stalled alert; null for ready_to_finish
+  threshold_days: number | null
+  next_action: string | null
+  milestones_total: number
+  last_activity_at: string
+}
+
+// A project with snoozed or muted reminders; kind is what would alert if it were not suppressed
+export type ReminderSuppressed = {
+  project_id: number
+  slug: string
+  name: string
+  status: ProjectStatus
+  kind: ReminderKind | null
+  snoozed_until: string | null
+  muted: boolean
+}
+
+export type Reminders = { alerts: ReminderAlert[]; suppressed: ReminderSuppressed[] }
+
+// snooze_days null clears the snooze; muted omitted leaves it as it is
+export type ReminderPrefsUpdate = { snooze_days?: number | null; muted?: boolean }
+
+export type ReminderPrefs = { project_id: number; snoozed_until: string | null; muted: boolean }
+
 export type ExportSummary = {
   projects_exported: number
   files_written: number
