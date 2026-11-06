@@ -280,3 +280,11 @@ main:focus { outline: none; }
 .bot-facts dt { color: var(--muted); font-size: 11px; }
 .bot-facts dd { margin: 2px 0 0; font-size: 13px; overflow-wrap: anywhere; }
 @media (max-width: 760px) { .bot-status { padding: 16px; margin-bottom: 36px; } }
+/* Bot-down banner: in the flow under the header, never fixed, so it cannot cover content at any width */
+.banner-wrap { max-width: 1180px; margin: 0 auto; padding: 20px 28px 0; }
+.bot-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 14px; color: var(--foreground); background: color-mix(in srgb, var(--danger) 10%, transparent); border: 1px solid var(--danger); border-radius: var(--radius); }
+.bot-banner > svg { flex: none; width: 20px; height: 20px; color: var(--danger); }
+.bot-banner p { flex: 1 1 12rem; min-width: 0; margin: 0; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.bot-banner-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.bot-banner-actions .metrics-link, .bot-banner-actions .metrics-refresh-btn { border: 1px solid var(--line-strong); }
+@media (max-width: 760px) { .banner-wrap { padding: 14px 18px 0; } .bot-banner-actions { flex: 1 1 100%; } .bot-banner-actions > * { flex: 1 1 auto; justify-content: center; } }

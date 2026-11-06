@@ -50,7 +50,8 @@ const PAIRS = [
   ...badge('accent-text', 'accent-text', 0.11, ['card', 'focus-from']),
   ...badge('warm', 'warm', 0.1, ['card']),
   ...badge('blue', 'blue', 0.1, ['card']),
-  ...badge('danger', 'danger', 0.1, ['card', 'background']), // bot status, bot-down banner
+  ...badge('danger', 'danger', 0.1, ['card', 'background', 'focus-from']), // bot status, bot-down banner icon
+  ...badge('foreground', 'danger', 0.1, ['background', 'card', 'focus-from']), // bot-down banner text
   ...badge('done-text', 'foreground', 0.07, ['card', 'soft', 'focus-from']),
   // Charts: bars 3:1 against every surface, text in the series colors 4.5:1; the hatched series
   // (chart-2) is outlined at 1.5px, and that outline is what carries it, so it needs 3:1 too

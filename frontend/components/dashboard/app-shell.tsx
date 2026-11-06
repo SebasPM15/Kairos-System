@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { pluralLabel } from '@/lib/labels'
 import type { Project } from '@/lib/types'
 import { useDashboard } from './dashboard-context'
+import { BotBanner } from './bot-banner'
 import { Sidebar, SidebarBrand } from './sidebar'
 import { LazyCreateProjectDialog, LazyExportDialog, LazyMobileNav, LazyProjectDrawer, preloadDialog } from './lazy-dialogs'
 
@@ -64,6 +65,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="header-brand"><SidebarBrand /></div>
         <HeaderActions />
       </header>
+      <BotBanner />
       <main id="contenido" tabIndex={-1}>
         <div className="container">{children}</div>
       </main>

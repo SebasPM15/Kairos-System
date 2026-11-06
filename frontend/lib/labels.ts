@@ -1,4 +1,5 @@
 import { ApiError } from './api'
+import { formatAgo } from './format'
 import type { BotState, BotStatus, ExportSummary, ProjectStatus } from './types'
 
 export const statusLabel: Record<ProjectStatus, string> = {
@@ -134,4 +135,15 @@ export function botStateExplanation(status: BotStatus): string {
     case 'stopped':
       return 'El bot se detuvo. Reinicia el backend para volver a activarlo.'
   }
+}
+
+// Banner text: a failed start, or a running bot whose connection is failing right now
+export function botDownMessage(status: BotStatus): string {
+  if (status.status === 'failed') {
+    const cause = status.reason ? ` (${status.reason})` : ''
+    return `El bot de Telegram no está funcionando${cause}. Mientras siga así no recibirás mensajes ni recordatorios.`
+  }
+  const error = status.last_error
+  const cause = error ? ` (${error.type}, ${formatAgo(error.at)})` : ''
+  return `El bot de Telegram perdió la conexión${cause}. Sigue intentando reconectar; los recordatorios pueden retrasarse.`
 }
