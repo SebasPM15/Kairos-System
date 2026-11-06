@@ -165,6 +165,30 @@ def reactivar(session: Session, user_id: int, args: str) -> str:
 
 
 @_reply
+def snooze_by_id(session: Session, user_id: int, args: str) -> str:
+    """Digest button: snooze the project with this ID for the default number of days."""
+    project_id = parse_id(args)
+    if project_id is None:
+        return messages.UNEXPECTED_ERROR
+    project = _projects(session, user_id).get(project_id)
+    update = ReminderPrefsUpdate(snooze_days=messages.SNOOZE_BUTTON_DAYS)
+    prefs = _reminders(session, user_id).update_prefs(project_id, update)
+    until = messages.short_date(prefs.snoozed_until, get_settings().tzinfo)
+    return f"{project.name}: pospuesto hasta el {until}."
+
+
+@_reply
+def mute_by_id(session: Session, user_id: int, args: str) -> str:
+    """Digest button: mute the reminders of the project."""
+    project_id = parse_id(args)
+    if project_id is None:
+        return messages.UNEXPECTED_ERROR
+    project = _projects(session, user_id).get(project_id)
+    _reminders(session, user_id).update_prefs(project_id, ReminderPrefsUpdate(muted=True))
+    return f"{project.name}: silenciado. Usa /reactivar {project.slug} para volver."
+
+
+@_reply
 def exportar(session: Session, user_id: int, args: str) -> str:
     summary = build_exporter(session, user_id, get_settings()).export()
     return messages.export_summary(summary)

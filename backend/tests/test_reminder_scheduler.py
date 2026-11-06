@@ -287,3 +287,26 @@ def test_the_context_manager_cancels_the_task_even_when_the_body_raises(monkeypa
         asyncio.run(body())
 
     assert cancelled == [True]
+
+
+def test_digest_keyboard_has_a_numbered_row_per_listed_project_and_none_for_paused():
+    from app.bot.notifier import reminder_keyboard
+    from app.models import ProjectStatus, ReminderKind
+    from app.schemas.reminder import ReminderAlert
+
+    def alert(project_id, status=ProjectStatus.ACTIVE):
+        return ReminderAlert(
+            project_id=project_id, slug=f"p{project_id}", name="P", status=status, kind=ReminderKind.STALLED,
+            days_idle=9, threshold_days=7, next_action=None, milestones_total=0, last_activity_at=NOW,
+        )
+
+    digest = Digest(items=[alert(4), alert(9)], paused=[alert(5, ProjectStatus.PAUSED)])
+
+    rows = reminder_keyboard(digest).inline_keyboard
+
+    assert [[(b.text, b.callback_data) for b in row] for row in rows] == [
+        [("1. Posponer 7 d", "pos:4"), ("1. Silenciar", "sil:4")],
+        [("2. Posponer 7 d", "pos:9"), ("2. Silenciar", "sil:9")],
+    ]
+    assert reminder_keyboard(Digest(items=[], paused=[alert(5, ProjectStatus.PAUSED)])) is None
+    assert all(len(b.callback_data.encode()) <= 64 for row in rows for b in row)

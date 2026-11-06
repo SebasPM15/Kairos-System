@@ -275,3 +275,117 @@ def test_keyboard_and_callback_replies_are_recorded(tracked, status):
     milestone_id = f"{DONE_CALLBACK_PREFIX}1"
     asyncio.run(tracked.hecho_callback(callback_update(ALLOWED_ID, milestone_id), None))
     assert status.snapshot.last_message_sent_at == NOW
+
+
+# --- digest buttons ---------------------------------------------------------------------------
+
+
+def digest_keyboard(*project_ids):
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+    from app.bot.notifier import MUTE_CALLBACK_PREFIX, SNOOZE_CALLBACK_PREFIX
+
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("Posponer 7 d", callback_data=f"{SNOOZE_CALLBACK_PREFIX}{pid}"),
+                InlineKeyboardButton("Silenciar", callback_data=f"{MUTE_CALLBACK_PREFIX}{pid}"),
+            ]
+            for pid in project_ids
+        ]
+    )
+
+
+def button_update(user_id, data, *project_ids):
+    update = callback_update(user_id, data)
+    update.callback_query.message = SimpleNamespace(reply_markup=digest_keyboard(*project_ids))
+    update.callback_query.edit_message_reply_markup = AsyncMock()
+    return update
+
+
+def prefs_for(session, project_id):
+    from app.models import ProjectReminderPrefs
+
+    session.expire_all()
+    return session.get(ProjectReminderPrefs, project_id)
+
+
+def make_two_projects(handlers, session):
+    for name in ("Uno", "Dos"):
+        run_command(handlers, "proyecto", message_update(ALLOWED_ID, f"/proyecto {name}"))
+    return [p.id for p in session.scalars(select(Project).order_by(Project.id))]
+
+
+def test_snooze_button_snoozes_answers_and_removes_only_that_project_buttons(handlers, session):
+    first, second = make_two_projects(handlers, session)
+    update = button_update(ALLOWED_ID, f"pos:{first}", first, second)
+
+    asyncio.run(handlers.reminder_callback(update, None))
+
+    assert prefs_for(session, first).snoozed_until is not None
+    assert prefs_for(session, second) is None
+    update.callback_query.answer.assert_awaited_once()
+    assert "Uno" in update.callback_query.answer.await_args.args[0]
+    (markup,) = update.callback_query.edit_message_reply_markup.await_args.args
+    assert [b.callback_data for row in markup.inline_keyboard for b in row] == [f"pos:{second}", f"sil:{second}"]
+
+
+def test_mute_button_mutes(handlers, session):
+    first, second = make_two_projects(handlers, session)
+    update = button_update(ALLOWED_ID, f"sil:{second}", first, second)
+
+    asyncio.run(handlers.reminder_callback(update, None))
+
+    assert prefs_for(session, second).muted is True
+    assert prefs_for(session, first) is None
+    assert "reactivar" in update.callback_query.answer.await_args.args[0]
+
+
+def test_buttons_of_a_stranger_are_ignored_in_silence(handlers, session):
+    first, second = make_two_projects(handlers, session)
+    for data in (f"pos:{first}", f"sil:{first}"):
+        update = button_update(STRANGER_ID, data, first, second)
+
+        asyncio.run(handlers.reminder_callback(update, None))
+
+        update.callback_query.answer.assert_not_awaited()
+        update.callback_query.edit_message_reply_markup.assert_not_awaited()
+    assert prefs_for(session, first) is None
+
+
+def test_button_for_a_project_of_another_user_changes_nothing(handlers, session, users):
+    foreign = Project(user_id=users[1].id, name="Theirs", slug="theirs")
+    session.add(foreign)
+    session.commit()
+    update = button_update(ALLOWED_ID, f"sil:{foreign.id}", foreign.id)
+
+    asyncio.run(handlers.reminder_callback(update, None))
+
+    assert "No existe ese proyecto" in update.callback_query.answer.await_args.args[0]
+    assert prefs_for(session, foreign.id) is None
+
+
+def test_button_with_a_garbage_id_answers_generically(handlers, session):
+    update = button_update(ALLOWED_ID, "pos:abc")
+
+    asyncio.run(handlers.reminder_callback(update, None))
+
+    assert update.callback_query.answer.await_args.args[0] == messages.UNEXPECTED_ERROR
+
+
+def test_button_on_a_message_without_markup_still_answers(handlers, session):
+    first, _ = make_two_projects(handlers, session)
+    update = button_update(ALLOWED_ID, f"pos:{first}")
+    update.callback_query.message = None
+
+    asyncio.run(handlers.reminder_callback(update, None))
+
+    update.callback_query.answer.assert_awaited_once()
+    update.callback_query.edit_message_reply_markup.assert_not_awaited()
+
+
+def test_reminder_buttons_are_registered_with_their_prefixes():
+    application = create_bot(Settings(telegram_bot_token="123:fake", telegram_allowed_user_id=ALLOWED_ID))
+
+    patterns = [h.pattern.pattern for h in application.handlers[0] if isinstance(h, CallbackQueryHandler)]
+    assert "^(pos:|sil:)" in patterns

@@ -12,6 +12,7 @@ from telegram.ext import Application, ApplicationBuilder, CallbackQueryHandler, 
 
 from app.bot import commands, messages
 from app.bot.catalog import COMMAND_CATALOG
+from app.bot.notifier import MUTE_CALLBACK_PREFIX, SNOOZE_CALLBACK_PREFIX
 from app.bot.status import BotStatus
 from app.config import Settings
 from app.db import SessionLocal
@@ -51,6 +52,11 @@ class BotHandlers:
         application.add_handler(
             CallbackQueryHandler(self.hecho_callback, pattern=f"^{DONE_CALLBACK_PREFIX}")
         )
+        application.add_handler(
+            CallbackQueryHandler(
+                self.reminder_callback, pattern=f"^({SNOOZE_CALLBACK_PREFIX}|{MUTE_CALLBACK_PREFIX})"
+            )
+        )
 
     def _is_allowed(self, update: Update) -> bool:
         user = update.effective_user
@@ -87,6 +93,21 @@ class BotHandlers:
         await query.edit_message_text(await self._run(commands.hecho, milestone_id))
         self._status.message_sent()
 
+    async def reminder_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Posponer / Silenciar buttons of the digest; same allowed-user filter as every handler."""
+        query = update.callback_query
+        if not self._is_allowed(update) or query is None:
+            return
+        data = query.data or ""
+        command = commands.snooze_by_id if data.startswith(SNOOZE_CALLBACK_PREFIX) else commands.mute_by_id
+        project_id = data.split(":", 1)[-1]
+        reply = await self._run(command, project_id)
+        # A popup keeps the digest readable; only the buttons of the answered project go away
+        await query.answer(reply)
+        markup = _without_project(query.message, project_id)
+        if markup is not None:
+            await query.edit_message_reply_markup(markup)
+
     async def _reply(self, update: Update, text: str, **kwargs) -> None:
         """Single path for replies, so the status records the last one Telegram accepted."""
         await update.message.reply_text(text, **kwargs)
@@ -105,6 +126,18 @@ class BotHandlers:
 def _command_args(text: str | None) -> str:
     parts = (text or "").split(maxsplit=1)
     return parts[1] if len(parts) > 1 else ""
+
+
+def _without_project(message, project_id: str) -> InlineKeyboardMarkup | None:
+    """The digest keyboard minus the buttons of one project; None when there is nothing to update."""
+    markup = getattr(message, "reply_markup", None)
+    if markup is None:
+        return None
+    answered = {f"{SNOOZE_CALLBACK_PREFIX}{project_id}", f"{MUTE_CALLBACK_PREFIX}{project_id}"}
+    rows = [
+        row for row in markup.inline_keyboard if not any(button.callback_data in answered for button in row)
+    ]
+    return InlineKeyboardMarkup(rows)
 
 
 def _keyboard(pending: list[tuple[int, str]]) -> InlineKeyboardMarkup:

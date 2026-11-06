@@ -127,6 +127,8 @@ def digest_text(digest: Digest, stale_days_paused: int) -> str:
     return "\n".join(lines)
 
 
+# Days a digest "Posponer" button snoozes for
+SNOOZE_BUTTON_DAYS = 7
 NO_REMINDERS = "No hay recordatorios pendientes. Tus proyectos tienen actividad reciente."
 INVALID_SNOOZE_DAYS = "Indica un número de días entre 1 y 30."
 
