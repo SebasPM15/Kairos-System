@@ -152,7 +152,7 @@ Todo en español; cada archivo lleva al inicio el aviso "Generado por Kairos des
 
 ## Frontend
 
-Next.js (App Router) con `@base-ui/react` para modales, toasts, tooltips y campos; estilos en `app/globals.css` con tokens CSS (`--accent-text`, `--line-strong`, `--ring-halo`...). `pnpm contrast` audita los pares de color de ambos temas.
+Next.js (App Router) con `@base-ui/react` para modales, toasts, tooltips y campos; estilos en `app/globals.css` con tokens CSS (`--accent-text`, `--line-strong`, `--ring-halo`...). `pnpm contrast` audita los pares de color de ambos temas. Tipografía: Inter (`next/font/google`, autoalojada; se descarga al compilar, así que `docker compose up --build` necesita internet esa vez) con `system-ui` de respaldo; el texto pequeño va de 11 a 14 px y el de las ideas a 15 px.
 
 - **Rutas**: `/` redirige a `/proyectos`; `/proyectos`, `/ideas` y `/bot` viven en el grupo `app/(app)/`. Su layout monta una sola vez `DashboardProvider` (proyectos, `/config`, filtros, búsqueda, selección del drawer, diálogos de crear y exportar), `AppShell` (sidebar, header con las acciones, `main#contenido`, drawer y diálogos) y `Toaster`. La vista activa se deriva de la URL, así que los datos, el texto del buscador y los filtros sobreviven a la navegación; el drawer se cierra al cambiar de ruta.
 - **Tema**: la clase `light` o `dark` va en `<html>`. Un script inline en `<head>` (`lib/prefs.ts`) la fija antes del primer pintado leyendo `localStorage['kairos-theme']` (por defecto oscuro, sin mirar `prefers-color-scheme`); `useTheme` la lee y la escribe, y si el almacenamiento falla todo sigue en oscuro.
