@@ -157,8 +157,9 @@ def create_bot(
             "Telegram bot disabled: set TELEGRAM_BOT_TOKEN and TELEGRAM_ALLOWED_USER_ID to enable it"
         )
         return None
-    # httpx logs every request URL at INFO, and Telegram URLs embed the token
-    for noisy in ("httpx", "httpcore"):
+    # httpx logs every request URL at INFO, and Telegram URLs embed the token; so does PTB when the bot
+    # is built with DEBUG on (it logs the Bot API URL)
+    for noisy in ("httpx", "httpcore", "telegram.ext.ExtBot"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
     application = ApplicationBuilder().token(settings.telegram_bot_token).build()
     BotHandlers(settings.telegram_allowed_user_id, session_factory, status).register(application)

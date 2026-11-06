@@ -72,3 +72,17 @@ def test_create_bot_silences_loggers_that_print_the_token(logger_name):
     bot_app.create_bot(Settings(telegram_bot_token="123:fake", telegram_allowed_user_id=1))
 
     assert logging.getLogger(logger_name).level == logging.WARNING
+
+
+def test_ptb_debug_logging_never_prints_the_token(caplog):
+    # PTB logs the Bot API URL, which embeds the token, when the bot is built with DEBUG enabled
+    secret = "123:SECRET-TOKEN"
+    logging.getLogger("telegram").setLevel(logging.DEBUG)
+    try:
+        with caplog.at_level(logging.DEBUG):
+            bot_app.create_bot(Settings(telegram_bot_token=secret, telegram_allowed_user_id=1))
+    finally:
+        logging.getLogger("telegram").setLevel(logging.NOTSET)
+        logging.getLogger("telegram.ext.ExtBot").setLevel(logging.NOTSET)
+
+    assert secret not in caplog.text
