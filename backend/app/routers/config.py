@@ -1,11 +1,14 @@
 from fastapi import APIRouter, Depends
 
 from app.config import Settings, get_settings
-from app.schemas.config import PublicConfig
+from app.schemas.config import PublicConfig, StaleAfterDays
 
 router = APIRouter(tags=["config"])
 
 
 @router.get("/config", response_model=PublicConfig)
 def read_config(settings: Settings = Depends(get_settings)):
-    return PublicConfig(max_active_projects=settings.max_active_projects)
+    return PublicConfig(
+        max_active_projects=settings.max_active_projects,
+        stale_after_days=StaleAfterDays(active=settings.stale_days_active, paused=settings.stale_days_paused),
+    )
