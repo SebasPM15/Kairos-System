@@ -18,11 +18,13 @@ from app.schemas.decision import DecisionCreate
 from app.schemas.idea import IdeaCreate
 from app.schemas.milestone import MilestoneCreate, MilestoneUpdate
 from app.schemas.project import ProjectCreate, ProjectRead, ProjectUpdate
+from app.schemas.reminder import ReminderPrefsUpdate
 from app.services.decision_service import DecisionService
 from app.services.errors import DomainError, ProjectNotFound
 from app.services.idea_service import IdeaService
 from app.services.milestone_service import MilestoneService
 from app.services.project_service import ProjectService
+from app.services.reminder_service import ReminderService
 
 # Telegram rejects messages longer than this
 MAX_MESSAGE_LENGTH = 4096
@@ -50,6 +52,10 @@ def _reply(command: Command) -> Command:
 
 def _projects(session: Session, user_id: int) -> ProjectService:
     return ProjectService(session, user_id, get_settings())
+
+
+def _reminders(session: Session, user_id: int) -> ReminderService:
+    return ReminderService(session, user_id, get_settings())
 
 
 def _by_slug(projects: list[ProjectRead], slug: str) -> ProjectRead:
@@ -115,6 +121,47 @@ def hecho(session: Session, user_id: int, args: str) -> str:
 @_reply
 def ayuda(session: Session, user_id: int, args: str) -> str:
     return messages.HELP
+
+
+@_reply
+def recordatorios(session: Session, user_id: int, args: str) -> str:
+    return messages.reminders_text(_reminders(session, user_id).overview(), get_settings().tzinfo)
+
+
+@_reply
+def posponer(session: Session, user_id: int, args: str) -> str:
+    parsed = split_slug(args)
+    if parsed is None:
+        return messages.USAGE["posponer"]
+    slug, days_text = parsed
+    days = parse_id(days_text)
+    if days is None or not 1 <= days <= 30:
+        return messages.INVALID_SNOOZE_DAYS
+    project = _by_slug(_projects(session, user_id).list(), slug)
+    prefs = _reminders(session, user_id).update_prefs(project.id, ReminderPrefsUpdate(snooze_days=days))
+    until = messages.short_date(prefs.snoozed_until, get_settings().tzinfo)
+    return f"Recordatorios de {project.name} pospuestos {messages.days_phrase(days)}, hasta el {until}."
+
+
+@_reply
+def silenciar(session: Session, user_id: int, args: str) -> str:
+    slug = args.strip().lower()
+    if not slug:
+        return messages.USAGE["silenciar"]
+    project = _by_slug(_projects(session, user_id).list(), slug)
+    _reminders(session, user_id).update_prefs(project.id, ReminderPrefsUpdate(muted=True))
+    return f"Recordatorios de {project.name} silenciados. Para volver a recibirlos usa /reactivar {project.slug}."
+
+
+@_reply
+def reactivar(session: Session, user_id: int, args: str) -> str:
+    slug = args.strip().lower()
+    if not slug:
+        return messages.USAGE["reactivar"]
+    project = _by_slug(_projects(session, user_id).list(), slug)
+    update = ReminderPrefsUpdate.model_validate({"snooze_days": None, "muted": False})
+    _reminders(session, user_id).update_prefs(project.id, update)
+    return f"Recordatorios de {project.name} reactivados."
 
 
 @_reply

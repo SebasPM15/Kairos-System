@@ -1,9 +1,12 @@
 """Spanish texts of the bot and the single mapping from domain errors to messages."""
 
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 from app.bot.catalog import help_text
 from app.models import ProjectStatus, ReminderKind
 from app.schemas.export import ExportSummary
-from app.schemas.reminder import ReminderAlert
+from app.schemas.reminder import ReminderAlert, RemindersRead
 from app.services import errors
 from app.services.reminder_digest import Digest
 
@@ -23,6 +26,9 @@ USAGE = {
     "decision": "Uso: /decision <slug>: <título> | <porqué>",
     "pausa": "Uso: /pausa <slug>",
     "terminar": "Uso: /terminar <slug>",
+    "posponer": "Uso: /posponer <slug>: <días> (de 1 a 30)",
+    "silenciar": "Uso: /silenciar <slug>",
+    "reactivar": "Uso: /reactivar <slug>",
 }
 
 HELP = help_text()
@@ -118,4 +124,31 @@ def digest_text(digest: Digest, stale_days_paused: int) -> str:
         lines.append(f"Hay {digest.overflow} más en /recordatorios.")
     if digest.paused:
         lines.append(paused_summary(len(digest.paused), stale_days_paused))
+    return "\n".join(lines)
+
+
+NO_REMINDERS = "No hay recordatorios pendientes. Tus proyectos tienen actividad reciente."
+INVALID_SNOOZE_DAYS = "Indica un número de días entre 1 y 30."
+
+
+def short_date(moment: datetime, tz: ZoneInfo) -> str:
+    return moment.astimezone(tz).strftime("%d/%m")
+
+
+def days_phrase(days: int) -> str:
+    return "1 día" if days == 1 else f"{days} días"
+
+
+def reminders_text(overview: RemindersRead, tz: ZoneInfo) -> str:
+    """Everything /recordatorios shows: live alerts plus the projects that are snoozed or muted."""
+    if not overview.alerts and not overview.suppressed:
+        return NO_REMINDERS
+    lines = ["Recordatorios"] if overview.alerts else ["No hay recordatorios pendientes."]
+    lines += [f"{n}. {alert_line(alert)}" for n, alert in enumerate(overview.alerts, start=1)]
+    if overview.suppressed:
+        lines.append("Pospuestos o silenciados:")
+        for item in overview.suppressed:
+            state = "silenciado" if item.muted else f"pospuesto hasta el {short_date(item.snoozed_until, tz)}"
+            lines.append(f"- {item.slug}: {state}")
+        lines.append("Usa /reactivar <slug> para volver a recibirlos.")
     return "\n".join(lines)

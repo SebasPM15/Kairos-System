@@ -25,6 +25,10 @@ COMMAND_CATALOG: tuple[CommandInfo, ...] = (
     CommandInfo(name="decision", args="<slug>: <título> | <porqué>", description="Registra una decisión con su razón"),
     CommandInfo(name="pausa", args="<slug>", description="Pausa un proyecto y libera un cupo de activos"),
     CommandInfo(name="terminar", args="<slug>", description="Marca un proyecto como terminado"),
+    CommandInfo(name="recordatorios", description="Muestra los proyectos que necesitan atención"),
+    CommandInfo(name="posponer", args="<slug>: <días>", description="Pospone los recordatorios de un proyecto (1 a 30 días)"),
+    CommandInfo(name="silenciar", args="<slug>", description="Silencia los recordatorios de un proyecto"),
+    CommandInfo(name="reactivar", args="<slug>", description="Reactiva los recordatorios de un proyecto"),
     CommandInfo(name="exportar", description="Exporta tus proyectos al vault de Obsidian"),
     CommandInfo(name="ayuda", description="Muestra los comandos disponibles"),
 )

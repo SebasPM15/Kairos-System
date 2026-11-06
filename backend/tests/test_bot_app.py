@@ -195,6 +195,7 @@ def test_create_bot_registers_every_command_and_the_callback():
     assert names == {
         "proyecto", "idea", "hito", "hecho", "estado", "foco", "decision",
         "pausa", "terminar", "exportar", "ayuda", "start",
+        "recordatorios", "posponer", "silenciar", "reactivar",
     }
     assert any(isinstance(h, CallbackQueryHandler) for h in handlers)
 
