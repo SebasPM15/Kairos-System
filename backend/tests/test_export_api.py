@@ -71,3 +71,28 @@ def test_export_only_includes_the_current_users_projects(client, users, vault):
     assert body["projects_exported"] == 1
     assert (vault / "Kairos" / "mio").is_dir()
     assert not (vault / "Kairos" / "ajeno").exists()
+
+
+def test_reminder_state_never_reaches_the_vault(client, vault, session, users):
+    from datetime import UTC, date, datetime
+
+    from app.models import ReminderKind, ReminderLog
+
+    project = client.post("/projects", json={"name": "Kairos"}).json()
+    session.add(ReminderLog(
+        user_id=users[0].id, project_id=project["id"], kind=ReminderKind.STALLED,
+        sent_at=datetime.now(UTC), local_date=date.today(),
+    ))
+    session.commit()
+    first = client.post("/export").json()
+    before = {p: p.read_text(encoding="utf-8") for p in vault.rglob("*.md")}
+
+    client.patch(f"/projects/{project['id']}/reminders", json={"muted": True, "snooze_days": 5})
+    second = client.post("/export").json()
+
+    assert (first["files_written"], second["files_written"], second["files_unchanged"]) == (5, 0, 5)
+    assert {p.name for p in before} == {"README.md", "hitos.md", "ideas.md", "decisiones.md", "_bandeja.md"}
+    for text in before.values():
+        for word in ("muted", "snooze", "reminder", "silenci", "recordatorio"):
+            assert word not in text.lower()
+    assert {p: p.read_text(encoding="utf-8") for p in vault.rglob("*.md")} == before
