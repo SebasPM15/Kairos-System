@@ -42,6 +42,9 @@ class ReminderService:
         self._projects = projects or ProjectService(session, user_id, settings)
         self._repo = repository or ReminderRepository(session)
 
+    def now(self) -> datetime:
+        return self._clock()
+
     def overview(self) -> RemindersRead:
         now = self._clock()
         prefs = {p.project_id: p for p in self._repo.list_prefs(self._user_id)}

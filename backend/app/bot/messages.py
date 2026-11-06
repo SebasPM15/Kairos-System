@@ -1,9 +1,11 @@
 """Spanish texts of the bot and the single mapping from domain errors to messages."""
 
 from app.bot.catalog import help_text
-from app.models import ProjectStatus
+from app.models import ProjectStatus, ReminderKind
 from app.schemas.export import ExportSummary
+from app.schemas.reminder import ReminderAlert
 from app.services import errors
+from app.services.reminder_digest import Digest
 
 STATUS_LABELS = {
     ProjectStatus.IDEA: "idea",
@@ -76,3 +78,44 @@ def days_label(days: int) -> str:
     if days <= 0:
         return "tocado hoy"
     return f"{days} día sin tocar" if days == 1 else f"{days} días sin tocar"
+
+
+MAX_NEXT_ACTION_LENGTH = 140
+
+
+def idle_label(days: int) -> str:
+    return f"{days} día sin avance" if days == 1 else f"{days} días sin avance"
+
+
+def alert_line(alert: ReminderAlert) -> str:
+    """One alert as a sentence; shared by the digest and /recordatorios."""
+    if alert.kind is ReminderKind.READY_TO_FINISH:
+        return (
+            f"{alert.slug}: todos los hitos están hechos. "
+            f"Usa /terminar {alert.slug} o agrega más con /hito."
+        )
+    line = f"{alert.slug}: {idle_label(alert.days_idle)}."
+    if alert.milestones_total == 0:
+        line += " Aún no tiene hitos."
+    if alert.next_action:
+        action = alert.next_action
+        if len(action) > MAX_NEXT_ACTION_LENGTH:
+            action = action[: MAX_NEXT_ACTION_LENGTH - 1] + "…"
+        line += f" Próxima acción: {action}"
+    return line
+
+
+def paused_summary(count: int, days: int) -> str:
+    if count == 1:
+        return f"Y 1 proyecto en pausa lleva más de {days} días: /recordatorios"
+    return f"Y {count} proyectos en pausa llevan más de {days} días: /recordatorios"
+
+
+def digest_text(digest: Digest, stale_days_paused: int) -> str:
+    lines = ["Recordatorios"]
+    lines += [f"{n}. {alert_line(alert)}" for n, alert in enumerate(digest.items, start=1)]
+    if digest.overflow:
+        lines.append(f"Hay {digest.overflow} más en /recordatorios.")
+    if digest.paused:
+        lines.append(paused_summary(len(digest.paused), stale_days_paused))
+    return "\n".join(lines)
