@@ -32,9 +32,15 @@ SessionFactory = Callable[[], Session]
 class BotHandlers:
     """Handlers for the single allowed user; anyone else is ignored without a reply."""
 
-    def __init__(self, allowed_user_id: int, session_factory: SessionFactory = SessionLocal) -> None:
+    def __init__(
+        self,
+        allowed_user_id: int,
+        session_factory: SessionFactory = SessionLocal,
+        status: BotStatus | None = None,
+    ) -> None:
         self._allowed_user_id = allowed_user_id
         self._session_factory = session_factory
+        self._status = status or BotStatus()
 
     def register(self, application: Application) -> None:
         for info in COMMAND_CATALOG:
@@ -55,7 +61,7 @@ class BotHandlers:
             if not self._is_allowed(update) or update.message is None:
                 return
             reply = await self._run(command, _command_args(update.message.text))
-            await update.message.reply_text(reply)
+            await self._reply(update, reply)
 
         return handler
 
@@ -64,13 +70,13 @@ class BotHandlers:
             return
         args = _command_args(update.message.text)
         if args:
-            await update.message.reply_text(await self._run(commands.hecho, args))
+            await self._reply(update, await self._run(commands.hecho, args))
             return
         pending = await self._run(lambda session, user_id, _: commands.pending_milestones(session, user_id))
         if not pending:
-            await update.message.reply_text(messages.NO_PENDING_MILESTONES)
+            await self._reply(update, messages.NO_PENDING_MILESTONES)
             return
-        await update.message.reply_text(messages.PICK_MILESTONE, reply_markup=_keyboard(pending))
+        await self._reply(update, messages.PICK_MILESTONE, reply_markup=_keyboard(pending))
 
     async def hecho_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         query = update.callback_query
@@ -79,6 +85,12 @@ class BotHandlers:
         await query.answer()
         milestone_id = (query.data or "").removeprefix(DONE_CALLBACK_PREFIX)
         await query.edit_message_text(await self._run(commands.hecho, milestone_id))
+        self._status.message_sent()
+
+    async def _reply(self, update: Update, text: str, **kwargs) -> None:
+        """Single path for replies, so the status records the last one Telegram accepted."""
+        await update.message.reply_text(text, **kwargs)
+        self._status.message_sent()
 
     async def _run(self, command: Callable[[Session, int, str], T], args: str = "") -> T:
         return await asyncio.to_thread(self._execute, command, args)
@@ -103,7 +115,9 @@ def _keyboard(pending: list[tuple[int, str]]) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(rows)
 
 
-def create_bot(settings: Settings, session_factory: SessionFactory = SessionLocal) -> Application | None:
+def create_bot(
+    settings: Settings, session_factory: SessionFactory = SessionLocal, status: BotStatus | None = None
+) -> Application | None:
     """Build the polling application, or None (with a warning) if it is not configured."""
     if not settings.telegram_bot_token or settings.telegram_allowed_user_id is None:
         logger.warning(
@@ -114,7 +128,7 @@ def create_bot(settings: Settings, session_factory: SessionFactory = SessionLoca
     for noisy in ("httpx", "httpcore"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
     application = ApplicationBuilder().token(settings.telegram_bot_token).build()
-    BotHandlers(settings.telegram_allowed_user_id, session_factory).register(application)
+    BotHandlers(settings.telegram_allowed_user_id, session_factory, status).register(application)
     return application
 
 
@@ -130,7 +144,7 @@ async def bot_lifespan(
 ) -> AsyncIterator[None]:
     """Run the bot's long polling for the duration of the context; the API never depends on it."""
     status = status or BotStatus()
-    application = create_bot(settings, session_factory)
+    application = create_bot(settings, session_factory, status)
     started = False
     if application is None:
         status.disabled(_disabled_reason(settings))

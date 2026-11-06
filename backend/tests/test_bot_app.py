@@ -1,4 +1,5 @@
 import asyncio
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -9,6 +10,7 @@ from telegram.ext import CallbackQueryHandler, CommandHandler
 
 from app.bot import commands, messages
 from app.bot.app import DONE_CALLBACK_PREFIX, BotHandlers, create_bot
+from app.bot.status import BotStatus, BotStatusSnapshot
 from app.config import Settings
 from app.models import Milestone, Project, User
 
@@ -222,3 +224,53 @@ def test_exportar_through_the_handler_replies_to_the_allowed_user_only(handlers,
     assert allowed.message.reply_text.await_args.args[0].startswith("Export listo: 1 proyecto")
     stranger.message.reply_text.assert_not_awaited()
     assert (vault / "Kairos" / "kairos" / "README.md").is_file()
+
+
+NOW = datetime(2026, 11, 5, 12, 0, tzinfo=UTC)
+
+
+@pytest.fixture
+def status():
+    return BotStatus(clock=lambda: NOW)
+
+
+@pytest.fixture
+def tracked(session, status):
+    factory = sessionmaker(bind=session.get_bind(), expire_on_commit=False)
+    return BotHandlers(ALLOWED_ID, factory, status)
+
+
+def test_a_reply_records_the_last_message_sent(tracked, status):
+    run_command(tracked, "estado", message_update(ALLOWED_ID, "/estado"))
+
+    assert status.snapshot.last_message_sent_at == NOW
+
+
+def test_a_failed_reply_is_not_recorded(tracked, status):
+    update = message_update(ALLOWED_ID, "/estado")
+    update.message.reply_text = AsyncMock(side_effect=RuntimeError("network"))
+
+    with pytest.raises(RuntimeError):
+        run_command(tracked, "estado", update)
+
+    assert status.snapshot.last_message_sent_at is None
+
+
+def test_a_stranger_never_updates_the_status(tracked, status):
+    run_command(tracked, "estado", message_update(STRANGER_ID, "/estado"))
+
+    assert status.snapshot.last_message_sent_at is None
+
+
+def test_keyboard_and_callback_replies_are_recorded(tracked, status):
+    seed_milestones(tracked, ["uno"])
+    status._snapshot = BotStatusSnapshot()
+    update = message_update(ALLOWED_ID, "/hecho")
+
+    asyncio.run(tracked.hecho(update, None))
+    assert status.snapshot.last_message_sent_at == NOW
+
+    status._snapshot = BotStatusSnapshot()
+    milestone_id = f"{DONE_CALLBACK_PREFIX}1"
+    asyncio.run(tracked.hecho_callback(callback_update(ALLOWED_ID, milestone_id), None))
+    assert status.snapshot.last_message_sent_at == NOW

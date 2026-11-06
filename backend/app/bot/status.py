@@ -66,3 +66,7 @@ class BotStatus:
         self._snapshot = replace(
             self._snapshot, last_error=LastError(type=type(error).__name__, at=self._clock())
         )
+
+    def message_sent(self) -> None:
+        """Telegram accepted an outgoing message (a reply or a proactive one)."""
+        self._snapshot = replace(self._snapshot, last_message_sent_at=self._clock())
