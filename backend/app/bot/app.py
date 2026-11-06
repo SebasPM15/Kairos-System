@@ -12,6 +12,7 @@ from telegram.ext import Application, ApplicationBuilder, CallbackQueryHandler, 
 
 from app.bot import commands, messages
 from app.bot.catalog import COMMAND_CATALOG
+from app.bot.status import BotStatus
 from app.config import Settings
 from app.db import SessionLocal
 from app.services.user_service import UserService
@@ -117,30 +118,42 @@ def create_bot(settings: Settings, session_factory: SessionFactory = SessionLoca
     return application
 
 
+def _disabled_reason(settings: Settings) -> str:
+    return "missing_token" if not settings.telegram_bot_token else "missing_user_id"
+
+
 @asynccontextmanager
 async def bot_lifespan(
-    settings: Settings, session_factory: SessionFactory = SessionLocal
+    settings: Settings,
+    session_factory: SessionFactory = SessionLocal,
+    status: BotStatus | None = None,
 ) -> AsyncIterator[None]:
     """Run the bot's long polling for the duration of the context; the API never depends on it."""
+    status = status or BotStatus()
     application = create_bot(settings, session_factory)
     started = False
-    if application is not None:
+    if application is None:
+        status.disabled(_disabled_reason(settings))
+    else:
         try:
             await application.initialize()
             await application.start()
             await application.updater.start_polling()
             started = True
+            status.running()
             logger.info("Telegram bot started")
             await register_menu(application)
         except Exception as error:
             # Only the class name: some Telegram errors echo the token in their message
             logger.error("Telegram bot failed to start (%s); the API keeps running", type(error).__name__)
+            status.failed(type(error).__name__)
             await _shutdown(application)
     try:
         yield
     finally:
         if started:
             await _shutdown(application)
+            status.stopped()
 
 
 async def register_menu(application: Application) -> None:
