@@ -57,6 +57,17 @@ export type DecisionCreate = { title: string; rationale: string }
 
 export type BotCommand = { name: string; args: string; syntax: string; description: string }
 
+export type BotState = 'disabled' | 'running' | 'failed' | 'stopped'
+
+// reason is a code (missing_token, missing_user_id) or an exception class name, never a message
+export type BotStatus = {
+  status: BotState
+  reason: string | null
+  started_at: string | null
+  last_message_sent_at: string | null
+  last_error: { type: string; at: string } | null
+}
+
 export type ExportSummary = {
   projects_exported: number
   files_written: number

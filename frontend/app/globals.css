@@ -262,3 +262,21 @@ main:focus { outline: none; }
   .only-narrow { display: inline; }
   .status-row { grid-template-columns: 5.5rem minmax(0, 1fr) 1.75rem; }
 }
+
+/* Bot status card (Bot tab) */
+.bot-status { display: flex; flex-direction: column; gap: 14px; margin-bottom: 48px; padding: 20px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); }
+.bot-state { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 6px; padding: 5px 10px; border-radius: 6px; font-size: 13px; font-weight: 700; }
+.bot-state svg { flex: none; width: 16px; height: 16px; }
+.bot-state[data-state="running"] { color: var(--accent-text); background: color-mix(in srgb, var(--accent-text) 11%, transparent); }
+.bot-state[data-state="failed"] { color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent); }
+.bot-state[data-state="stopped"] { color: var(--warm); background: color-mix(in srgb, var(--warm) 10%, transparent); }
+.bot-state[data-state="disabled"] { color: var(--muted); background: var(--soft); }
+.bot-status-detail { margin: 0; color: var(--text-soft); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.bot-status-error p { margin: 0; color: var(--danger); font-size: 13px; line-height: 1.5; }
+.bot-status-error { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.bot-status-error .bot-status-detail { color: var(--text-soft); }
+.bot-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 12px 20px; margin: 16px 0 0; }
+.bot-facts div { min-width: 0; }
+.bot-facts dt { color: var(--muted); font-size: 11px; }
+.bot-facts dd { margin: 2px 0 0; font-size: 13px; overflow-wrap: anywhere; }
+@media (max-width: 760px) { .bot-status { padding: 16px; margin-bottom: 36px; } }

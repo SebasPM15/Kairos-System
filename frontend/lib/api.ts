@@ -1,5 +1,6 @@
 import type {
   BotCommand,
+  BotStatus,
   Decision,
   DecisionCreate,
   ExportSummary,
@@ -120,6 +121,7 @@ export const decisions = {
 
 export const bot = {
   commands: () => request<BotCommand[]>('/bot/commands'),
+  status: () => request<BotStatus>('/bot/status'),
 }
 
 export const vault = {

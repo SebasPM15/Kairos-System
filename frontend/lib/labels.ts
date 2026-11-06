@@ -1,5 +1,5 @@
 import { ApiError } from './api'
-import type { ExportSummary, ProjectStatus } from './types'
+import type { BotState, BotStatus, ExportSummary, ProjectStatus } from './types'
 
 export const statusLabel: Record<ProjectStatus, string> = {
   idea: 'Idea',
@@ -111,4 +111,27 @@ export function exportSummaryText(summary: ExportSummary): string {
   const written = formatCount('fileWritten', summary.files_written)
   const unchanged = formatCount('fileUnchanged', summary.files_unchanged)
   return `${projects}; ${written} y ${unchanged}.`
+}
+
+export const BOT_STATE_LABEL: Record<BotState, string> = {
+  running: 'Activo',
+  disabled: 'Desactivado',
+  failed: 'Con fallo',
+  stopped: 'Detenido',
+}
+
+// What the user should do about the state; the backend only sends codes and exception names
+export function botStateExplanation(status: BotStatus): string {
+  switch (status.status) {
+    case 'running':
+      return 'El bot recibe tus mensajes por Telegram.'
+    case 'disabled':
+      return status.reason === 'missing_user_id'
+        ? 'Falta definir TELEGRAM_ALLOWED_USER_ID en el archivo .env. Reinicia el backend después de cambiarlo.'
+        : 'Falta definir TELEGRAM_BOT_TOKEN en el archivo .env. Reinicia el backend después de cambiarlo.'
+    case 'failed':
+      return 'El bot no pudo iniciar. Revisa el token y la conexión, y reinicia el backend.'
+    case 'stopped':
+      return 'El bot se detuvo. Reinicia el backend para volver a activarlo.'
+  }
 }
