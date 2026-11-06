@@ -30,3 +30,7 @@ export function formatAgo(iso: string, now: number = Date.now()): string {
   if (seconds < 86400) return relative.format(-Math.floor(seconds / 3600), 'hour')
   return relative.format(-Math.floor(seconds / 86400), 'day')
 }
+
+export function formatShortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('es', { day: 'numeric', month: 'short' })
+}

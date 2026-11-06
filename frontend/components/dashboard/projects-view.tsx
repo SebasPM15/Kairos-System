@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { AttentionBlock } from '@/components/reminders/attention-block'
 import { useDashboard } from './dashboard-context'
 import { FocusSection } from './focus-section'
 import { ProjectsSection } from './projects-section'
@@ -43,6 +44,7 @@ export function ProjectsView() {
     {load.state === 'error' && <LoadError message={load.message} onRetry={retry} />}
     {load.state === 'ready' && projects.length === 0 && <EmptyProjects />}
     {load.state === 'ready' && projects.length > 0 && <>
+      <AttentionBlock />
       <FocusSection />
       <ProjectsSection />
     </>}

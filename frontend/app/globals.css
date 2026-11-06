@@ -288,3 +288,33 @@ main:focus { outline: none; }
 .bot-banner-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .bot-banner-actions .metrics-link, .bot-banner-actions .metrics-refresh-btn { border: 1px solid var(--line-strong); }
 @media (max-width: 760px) { .banner-wrap { padding: 14px 18px 0; } .bot-banner-actions { flex: 1 1 100%; } .bot-banner-actions > * { flex: 1 1 auto; justify-content: center; } }
+/* "Necesitan atención" block on /proyectos */
+.touch-target { min-height: 44px; min-width: 44px; }
+.attention { margin-bottom: 64px; }
+.attention-list { list-style: none; margin: 0; padding: 0; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); }
+.attention-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px 20px; padding: 14px 16px; }
+.attention-row + .attention-row { border-top: 1px solid var(--line); }
+.attention-main { min-width: 0; }
+.attention-title { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
+.attention-title .status-badge { flex: none; margin-top: 1px; }
+.attention-name { display: -webkit-box; min-width: 0; margin: 0; overflow: hidden; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-size: 15px; font-weight: 700; letter-spacing: -.02em; line-height: 1.35; }
+.attention-reason { margin: 4px 0 0; color: var(--warm); font-size: 13px; font-weight: 700; overflow-wrap: anywhere; }
+.attention-reason[data-kind="ready_to_finish"] { color: var(--accent-text); }
+.attention-next { display: -webkit-box; margin: 4px 0 0; overflow: hidden; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: var(--text-soft); font-size: 12px; line-height: 1.5; }
+.attention-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.attention-empty { margin: 0; padding: 14px 16px; color: var(--muted); font-size: 13px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); }
+.attention-error { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; padding: 10px 10px 10px 14px; border: 1px solid var(--line-strong); border-radius: var(--radius); }
+.attention-error p { flex: 1 1 14rem; margin: 0; color: var(--danger); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.attention-suppressed { margin-top: 12px; }
+.attention-suppressed summary { display: flex; align-items: center; min-height: 44px; color: var(--muted); font-size: 13px; cursor: pointer; }
+.attention-suppressed summary:hover { color: var(--foreground); }
+.attention-suppressed summary svg { flex: none; width: 16px; height: 16px; margin-right: 6px; transition: transform .15s ease; }
+.attention-suppressed[open] summary svg { transform: rotate(90deg); }
+.attention-suppressed summary:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+.attention-suppressed .attention-reason { color: var(--muted); font-weight: 400; }
+@media (max-width: 760px) {
+  .attention { margin-bottom: 48px; }
+  .attention-row { grid-template-columns: minmax(0, 1fr); }
+  .attention-actions { justify-content: stretch; }
+  .attention-actions > * { flex: 1 1 auto; }
+}

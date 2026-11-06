@@ -106,6 +106,9 @@ export const TOAST = {
   ideaUnassigned: 'Idea devuelta a la bandeja',
   ideaDeleted: 'Idea borrada',
   exportDone: 'Exportación lista',
+  remindersSnoozed: 'Recordatorios pospuestos',
+  remindersMuted: 'Recordatorios silenciados',
+  remindersReactivated: 'Recordatorios reactivados',
 } as const
 
 export function exportSummaryText(summary: ExportSummary): string {
