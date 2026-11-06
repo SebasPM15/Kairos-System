@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.bot.app import bot_lifespan
 from app.bot.status import BotStatus
 from app.config import get_settings
+from app.reminders.scheduler import reminder_scheduler
 from app.routers import bot, config, decisions, export, health, ideas, metrics, milestones, projects, reminders
 
 
@@ -16,8 +17,9 @@ def create_app() -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         # Long polling runs in this process, so run a single worker
-        async with bot_lifespan(settings, status=app.state.bot_status):
-            yield
+        async with bot_lifespan(settings, status=app.state.bot_status) as application:
+            async with reminder_scheduler(settings, application, app.state.bot_status):
+                yield
 
     app = FastAPI(title="Kairos", lifespan=lifespan)
     app.state.bot_status = BotStatus()

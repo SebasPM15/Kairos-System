@@ -61,8 +61,8 @@ class BotStatus:
     def stopped(self) -> None:
         self._snapshot = replace(self._snapshot, status=BotState.STOPPED, reason=None)
 
-    def polling_error(self, error: BaseException) -> None:
-        """error_callback of the updater; PTB calls it again for as long as the outage lasts."""
+    def record_error(self, error: BaseException) -> None:
+        """Polling error_callback (PTB repeats it for as long as an outage lasts) and failed deliveries."""
         self._snapshot = replace(
             self._snapshot, last_error=LastError(type=type(error).__name__, at=self._clock())
         )

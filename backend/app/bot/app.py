@@ -141,7 +141,7 @@ async def bot_lifespan(
     settings: Settings,
     session_factory: SessionFactory = SessionLocal,
     status: BotStatus | None = None,
-) -> AsyncIterator[None]:
+) -> AsyncIterator[Application | None]:
     """Run the bot's long polling for the duration of the context; the API never depends on it."""
     status = status or BotStatus()
     application = create_bot(settings, session_factory, status)
@@ -152,7 +152,7 @@ async def bot_lifespan(
         try:
             await application.initialize()
             await application.start()
-            await application.updater.start_polling(error_callback=status.polling_error)
+            await application.updater.start_polling(error_callback=status.record_error)
             started = True
             status.running()
             logger.info("Telegram bot started")
@@ -163,7 +163,7 @@ async def bot_lifespan(
             status.failed(type(error).__name__)
             await _shutdown(application)
     try:
-        yield
+        yield application if started else None
     finally:
         if started:
             await _shutdown(application)
