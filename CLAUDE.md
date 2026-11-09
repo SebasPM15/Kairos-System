@@ -60,6 +60,7 @@ Copiar `.env.example` a `.env` y completar. El `.env` nunca se commitea.
 - El tema (clase `light` / `dark`) vive en `<html>`, nunca en un contenedor; los portales (Dialog, Toaster, AlertDialog) van a `body` y lo heredan. Las preferencias (`kairos-theme`, `kairos-sidebar`) se leen en un script inline del `<head>` y se guardan siempre dentro de `try/catch`.
 - Las páginas del dashboard viven bajo `frontend/app/(app)/`, cuyo layout monta `DashboardProvider`, `AppShell` y `Toaster` una sola vez.
 - Decisiones cerradas (no cambiar sin pedirlo): BD fuente de verdad, vault unidireccional, `MAX_ACTIVE_PROJECTS=3`, estados en inglés en BD/API, porcentaje calculado en el backend.
+- Despliegue (el compose del repo es la única fuente; ver `deploy/homelab/README.md`): puertos solo en `127.0.0.1`, `restart: always`, `mem_limit` y `healthcheck` en cada servicio, imágenes base con tag fijo (se actualiza a propósito, nunca `latest`), `.env` real fuera de Git (en el servidor, enlazado desde `/srv/stacks/nova-brain`). Scripts y plantillas del servidor en `deploy/homelab/`; `.gitattributes` mantiene LF en lo que se ejecuta en Linux.
 
 ## Regla de sesión
 

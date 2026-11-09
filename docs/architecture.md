@@ -9,7 +9,7 @@ Next.js ──HTTP──► routers/ ─┘        │
                                      └──► exporters/ ──► Vault Obsidian (Markdown)
 ```
 
-Todo corre en local. Un solo proceso: FastAPI + bot de Telegram (long polling) + una tarea asyncio que envía el resumen diario de recordatorios (ver «Recordatorios»). Routers y handlers son delgados; la lógica (límite de activos, porcentaje, actualización de `last_activity_at`) vive en `services/`. Los schemas (Pydantic) definen el contrato de la API.
+Todo corre en local (en el PC o en el homelab con `deploy/homelab/`). Un solo proceso: FastAPI + bot de Telegram (long polling) + una tarea asyncio que envía el resumen diario de recordatorios (ver «Recordatorios»). Routers y handlers son delgados; la lógica (límite de activos, porcentaje, actualización de `last_activity_at`) vive en `services/`. Los schemas (Pydantic) definen el contrato de la API.
 
 ## Esquema de BD
 
@@ -66,6 +66,7 @@ Reglas:
 - Docker Compose (backend + frontend): SQLite en volumen `/data`; vault de Obsidian como bind mount en `/vault` (`OBSIDIAN_VAULT_PATH=/vault` dentro del contenedor).
 - `NEXT_PUBLIC_API_URL` (la URL del backend que llama el navegador) la incrusta Next.js al compilar, no al arrancar: en Docker se pasa como build arg (`docker-compose.yml` -> `frontend/Dockerfile`, por defecto `http://localhost:8000`) y para cambiarla hay que reconstruir (`docker compose up -d --build`). El origen del frontend debe estar en `CORS_ORIGINS`.
 - Bot con long polling: sin webhooks ni URL pública.
+- Compose endurecido: puertos solo en `127.0.0.1`, `restart: always`, `mem_limit` por servicio, healthcheck en ambos, imágenes base con tag fijo (`python:3.12.16-slim-trixie`, `node:22.23.4-alpine3.24`). En el servidor el `.env` real vive fuera del repo y se enlaza como `app/.env`; scripts de despliegue y respaldo en `deploy/homelab/` y `scripts/`. `.gitattributes` fuerza LF en `*.sh`, Dockerfile, compose y plantillas.
 - Desarrollo diario nativo (`uvicorn --reload`, `pnpm dev`); Docker sirve para ejecutar el sistema completo.
 - Obsidian es solo una carpeta de Markdown: el export funciona sin tener Obsidian instalado.
 

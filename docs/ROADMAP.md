@@ -41,6 +41,7 @@
 
 ## Después
 
+- **Despliegue en homelab** (en curso): repo preparado (compose endurecido, tags fijos, `restore.sh`, `deploy/homelab/`); falta ejecutarlo en el servidor. Ver `docs/ESTADO.md`.
 - **v0.2** [x] — Recordatorios y alertas de proyectos sin avance, y señal de «bot caído».
     - Alertas calculadas en vivo en el backend (`stalled` para activos a los 7 días y pausados a los 30; `ready_to_finish` para activos con todos los hitos hechos), con umbrales en `Settings` y expuestos en `GET /config`.
     - Un resumen diario por Telegram (tarea asyncio en el lifespan, sin dependencias nuevas) con máximo 5 proyectos, botones Posponer 7 d / Silenciar y comandos `/recordatorios`, `/posponer`, `/silenciar` y `/reactivar`. Anti-ruido: un resumen por día local, repeticiones limitadas, horas de silencio en `TIMEZONE`.
