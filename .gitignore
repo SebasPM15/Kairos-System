@@ -17,3 +17,7 @@ demo-vault/
 
 # Milestone 11 before/after screenshots
 docs/capturas-h11/
+
+# Local backup archives (never version them)
+/kairos-data-backup.tgz
+/*.tgz
