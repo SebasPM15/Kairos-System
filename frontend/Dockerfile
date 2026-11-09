@@ -1,4 +1,6 @@
-FROM node:22-alpine AS base
+# Pinned to Node patch version + Alpine release. To update: check the new tag exists
+# (docker buildx imagetools inspect <tag>), bump it in both FROM lines, then rebuild.
+FROM node:22.23.4-alpine3.24 AS base
 RUN corepack enable
 WORKDIR /app
 
@@ -11,10 +13,12 @@ ARG NEXT_PUBLIC_API_URL=http://localhost:8000
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
     NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
+# Optional cap for Node's heap while building (MB); unset keeps Node's default
+ARG NODE_BUILD_MEMORY_MB
 COPY . .
-RUN pnpm build
+RUN if [ -n "$NODE_BUILD_MEMORY_MB" ]; then export NODE_OPTIONS="--max-old-space-size=$NODE_BUILD_MEMORY_MB"; fi && pnpm build
 
-FROM node:22-alpine AS runtime
+FROM node:22.23.4-alpine3.24 AS runtime
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     HOSTNAME=0.0.0.0 \

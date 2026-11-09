@@ -9,7 +9,7 @@ set -euo pipefail
 VOLUME="kairos-system_kairos-data"
 DEST="${HOME}/Backups/Kairos"
 KEEP=14
-IMAGE="python:3.12-slim"
+IMAGE="python:3.12.16-slim-trixie"
 while getopts "v:d:k:" opt; do
   case $opt in
     v) VOLUME=$OPTARG ;; d) DEST=$OPTARG ;; k) KEEP=$OPTARG ;;

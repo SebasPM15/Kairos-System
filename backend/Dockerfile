@@ -1,4 +1,6 @@
-FROM python:3.12-slim
+# Pinned to patch version + Debian suite. To update: check the new tag exists (docker buildx imagetools inspect <tag>),
+# bump it here and in scripts/backup.* and restore.*, then rebuild and run the tests.
+FROM python:3.12.16-slim-trixie
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1

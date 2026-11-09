@@ -12,14 +12,14 @@
 .PARAMETER Volume       Docker volume to back up (default kairos-system_kairos-data).
 .PARAMETER Destination  Folder for the .tgz files (default %USERPROFILE%\Backups\Kairos; created if missing).
 .PARAMETER Keep         How many backups to keep (default 14).
-.PARAMETER Image        Image used for the helper container (default python:3.12-slim, already used by the stack).
+.PARAMETER Image        Image used for the helper container (default python:3.12.16-slim-trixie, already used by the stack).
 #>
 [CmdletBinding()]
 param(
   [string]$Volume = 'kairos-system_kairos-data',
   [string]$Destination = (Join-Path $env:USERPROFILE 'Backups\Kairos'),
   [ValidateRange(1, 3650)][int]$Keep = 14,
-  [string]$Image = 'python:3.12-slim'
+  [string]$Image = 'python:3.12.16-slim-trixie'
 )
 # Continue, not Stop: docker may print warnings on stderr, which Stop would turn into fatal errors;
 # failures are detected through $LASTEXITCODE and explicit throws instead

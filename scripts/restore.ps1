@@ -19,7 +19,7 @@ param(
   [Parameter(Mandatory)][string]$Volume,
   [switch]$OverwriteReal,
   [switch]$Yes,
-  [string]$Image = 'python:3.12-slim'
+  [string]$Image = 'python:3.12.16-slim-trixie'
 )
 # Continue, not Stop: docker may print warnings on stderr, which Stop would turn into fatal errors;
 # failures are detected through $LASTEXITCODE and explicit throws instead
