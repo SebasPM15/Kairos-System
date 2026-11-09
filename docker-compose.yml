@@ -4,6 +4,7 @@ services:
     restart: always
     # Measured peak ~86 MiB (startup + load + export); ~3x margin
     mem_limit: 256m
+    memswap_limit: 256m
     env_file: .env
     environment:
       DATABASE_URL: sqlite:////data/kairos.db
@@ -29,6 +30,7 @@ services:
     restart: always
     # Measured peak ~48 MiB under load; ~4x margin
     mem_limit: 192m
+    memswap_limit: 192m
     ports:
       - "127.0.0.1:3000:3000"
     healthcheck:
