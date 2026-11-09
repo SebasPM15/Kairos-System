@@ -1,13 +1,15 @@
 services:
   backend:
     build: ./backend
-    restart: unless-stopped
+    restart: always
+    # Measured peak ~86 MiB (startup + load + export); ~3x margin
+    mem_limit: 256m
     env_file: .env
     environment:
       DATABASE_URL: sqlite:////data/kairos.db
       OBSIDIAN_VAULT_PATH: /vault
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     volumes:
       - kairos-data:/data
       - ${VAULT_HOST_PATH:-./vault-dev}:/vault
@@ -23,9 +25,17 @@ services:
       context: ./frontend
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
-    restart: unless-stopped
+    restart: always
+    # Measured peak ~48 MiB under load; ~4x margin
+    mem_limit: 192m
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     depends_on:
       backend:
         condition: service_healthy
