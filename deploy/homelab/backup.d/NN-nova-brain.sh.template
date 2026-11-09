@@ -14,18 +14,18 @@ DEST="${DEST:-}"   # TODO: carpeta de destino que entregue el contrato de backup
 [ -n "$DEST" ] || { echo "Falta DEST (ver TODO)." >&2; exit 1; }
 
 STAGE=$(mktemp -d)
-trap 'rm -rf -- "$STAGE"' EXIT
+NAME="nova-brain-$(date +%Y%m%d-%H%M).tgz"
+trap 'rm -rf -- "$STAGE"; [ -z "$DEST" ] || rm -f -- "$DEST/$NAME.part"' EXIT
 
 # 1) Base: kairos-data-AAAAMMDD-HHmm.tgz en el área temporal (sin retención aquí; la gestiona el sistema de backup)
-bash "$APP_DIR/scripts/backup.sh" "$VOLUME" --dest "$STAGE" --keep 1
+bash "$APP_DIR/scripts/backup.sh" "$VOLUME" --dest "$STAGE/db" --keep 1
 
 # 2) Vault tal cual está (carpeta de Markdown)
 mkdir -p -- "$STAGE/vault"
 cp -a -- "$VAULT_DIR/." "$STAGE/vault/"
 
 # 3) Un solo archivo, escrito como .part y renombrado al terminar
-NAME="nova-brain-$(date +%Y%m%d-%H%M).tgz"
 mkdir -p -- "$DEST"
-tar -czf "$DEST/$NAME.part" -C "$STAGE" vault kairos-data-*.tgz
+tar -czf "$DEST/$NAME.part" -C "$STAGE" vault db
 mv -- "$DEST/$NAME.part" "$DEST/$NAME"
 echo "Respaldo de nova-brain: $DEST/$NAME"
