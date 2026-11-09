@@ -1,0 +1,12 @@
+// Patrones para el .stignore del vault de Obsidian en Syncthing
+// Estado local de Obsidian
+.obsidian/workspace*.json
+.obsidian/cache
+.trash
+// Temporales, intercambio y bloqueos de editores y sistemas
+// El export a Obsidian escribe .kairos-XXXX.tmp en la carpeta destino y lo renombra (os.replace); no usa archivos de bloqueo
+.kairos-*.tmp
+*.tmp
+*.swp
+.DS_Store
+~$*

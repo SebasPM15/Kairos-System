@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Plantilla del gancho de respaldo de nova-brain para /srv/scripts/backup.d/NN-nova-brain.sh.
+# TODO: el contrato real del directorio backup.d (cómo se invoca el gancho, qué argumentos o variables recibe,
+#       código de salida esperado, dónde debe dejar el archivo) lo define el servidor y NO está inventado aquí:
+#       léelo en /srv/scripts y ajusta DEST y la invocación antes de instalar este archivo.
+# Deja en DEST un único .tgz con la base (copia consistente vía API de backup de SQLite, con el backend en
+# marcha) y el vault de Obsidian.
+set -euo pipefail
+
+APP_DIR="${APP_DIR:-/srv/projects/nova-brain/app}"
+VOLUME="${VOLUME:-nova-brain_kairos-data}"
+VAULT_DIR="${VAULT_DIR:-/srv/projects/nova-brain/vault}"
+DEST="${DEST:-}"   # TODO: carpeta de destino que entregue el contrato de backup.d
+[ -n "$DEST" ] || { echo "Falta DEST (ver TODO)." >&2; exit 1; }
+
+STAGE=$(mktemp -d)
+trap 'rm -rf -- "$STAGE"' EXIT
+
+# 1) Base: kairos-data-AAAAMMDD-HHmm.tgz en el área temporal (sin retención aquí; la gestiona el sistema de backup)
+bash "$APP_DIR/scripts/backup.sh" "$VOLUME" --dest "$STAGE" --keep 1
+
+# 2) Vault tal cual está (carpeta de Markdown)
+mkdir -p -- "$STAGE/vault"
+cp -a -- "$VAULT_DIR/." "$STAGE/vault/"
+
+# 3) Un solo archivo, escrito como .part y renombrado al terminar
+NAME="nova-brain-$(date +%Y%m%d-%H%M).tgz"
+mkdir -p -- "$DEST"
+tar -czf "$DEST/$NAME.part" -C "$STAGE" vault kairos-data-*.tgz
+mv -- "$DEST/$NAME.part" "$DEST/$NAME"
+echo "Respaldo de nova-brain: $DEST/$NAME"
