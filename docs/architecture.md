@@ -66,7 +66,7 @@ Reglas:
 - Docker Compose (backend + frontend): SQLite en volumen `/data`; vault de Obsidian como bind mount en `/vault` (`OBSIDIAN_VAULT_PATH=/vault` dentro del contenedor).
 - `NEXT_PUBLIC_API_URL` (la URL del backend que llama el navegador) la incrusta Next.js al compilar, no al arrancar: en Docker se pasa como build arg (`docker-compose.yml` -> `frontend/Dockerfile`, por defecto `http://localhost:8000`) y para cambiarla hay que reconstruir (`docker compose up -d --build`). El origen del frontend debe estar en `CORS_ORIGINS`.
 - Bot con long polling: sin webhooks ni URL pública.
-- Compose endurecido: puertos solo en `127.0.0.1`, `restart: always`, `mem_limit` por servicio, healthcheck en ambos, imágenes base con tag fijo (`python:3.12.16-slim-trixie`, `node:22.23.4-alpine3.24`). En el servidor el `.env` real vive fuera del repo y se enlaza como `app/.env`; scripts de despliegue y respaldo en `deploy/homelab/` y `scripts/`. `.gitattributes` fuerza LF en `*.sh`, Dockerfile, compose y plantillas.
+- Compose endurecido: puertos solo en `127.0.0.1`, `restart: always`, `mem_limit` por servicio (con `memswap_limit` igual), healthcheck en ambos, imágenes base con tag fijo (`python:3.12.16-slim-trixie`, `node:22.23.4-alpine3.24`). En el servidor el `.env` real vive fuera del repo y se enlaza como `app/.env`; scripts de despliegue y respaldo en `deploy/homelab/` y `scripts/`. `.gitattributes` fuerza LF en `*.sh`, Dockerfile, compose y plantillas.
 - Desarrollo diario nativo (`uvicorn --reload`, `pnpm dev`); Docker sirve para ejecutar el sistema completo.
 - Obsidian es solo una carpeta de Markdown: el export funciona sin tener Obsidian instalado.
 

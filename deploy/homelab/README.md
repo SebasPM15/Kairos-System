@@ -118,7 +118,7 @@ Host nova-brain
 - **El bot no puede correr en dos sitios a la vez.** Con el mismo token, dos procesos compiten por `getUpdates` y
   Telegram responde `409 Conflict`. Antes de arrancar el del servidor, para el del PC (`docker compose down`,
   `uvicorn`); y al volver al desarrollo nativo, para el del servidor o usa otro bot.
-- El `mem_limit` (backend 256 MB, frontend 192 MB) es holgado respecto a lo medido (~86 y ~48 MiB de pico).
+- El `mem_limit` (con `memswap_limit` igual; backend 256 MB, frontend 192 MB) es holgado respecto a lo medido (~86 y ~48 MiB de pico).
 
 ## Respaldos y Syncthing
 
