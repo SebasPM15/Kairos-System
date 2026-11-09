@@ -3,17 +3,24 @@
 # The database is copied with SQLite's backup API from a throwaway container that mounts the volume
 # read-only: consistent while the backend runs, and unable to modify the real data. The archive is written
 # under a .part name and renamed when complete, so a failure never leaves a partial .tgz.
-# Usage: scripts/backup.sh [-v volume] [-d destination] [-k keep]
+# Usage: scripts/backup.sh [volume] [--volume NAME] [--dest DIR] [--keep N]
+#   volume defaults to kairos-system_kairos-data, DIR to ~/Backups/Kairos and N to 14 (short: -v, -d, -k).
 set -euo pipefail
 
 VOLUME="kairos-system_kairos-data"
 DEST="${HOME}/Backups/Kairos"
 KEEP=14
-IMAGE="python:3.12.16-slim-trixie"
-while getopts "v:d:k:" opt; do
-  case $opt in
-    v) VOLUME=$OPTARG ;; d) DEST=$OPTARG ;; k) KEEP=$OPTARG ;;
-    *) echo "usage: $0 [-v volume] [-d destination] [-k keep]" >&2; exit 2 ;;
+IMAGE="${KAIROS_BACKUP_IMAGE:-python:3.12.16-slim-trixie}"
+usage() { echo "usage: $0 [volume] [--volume NAME] [--dest DIR] [--keep N]" >&2; exit 2; }
+POSITIONAL=0
+while [ $# -gt 0 ]; do
+  case $1 in
+    -v|--volume) [ $# -ge 2 ] || usage; VOLUME=$2; shift 2 ;;
+    -d|--dest) [ $# -ge 2 ] || usage; DEST=$2; shift 2 ;;
+    -k|--keep) [ $# -ge 2 ] || usage; KEEP=$2; shift 2 ;;
+    -h|--help) usage ;;
+    -*) usage ;;
+    *) [ "$POSITIONAL" -eq 0 ] || usage; VOLUME=$1; POSITIONAL=1; shift ;;
   esac
 done
 case $KEEP in ''|*[!0-9]*|0) echo "keep must be a positive number" >&2; exit 2 ;; esac
