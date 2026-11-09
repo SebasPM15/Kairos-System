@@ -1,2 +1,6 @@
-# Shell scripts must keep LF endings or bash fails on the carriage returns
+# Files executed or built on Linux must keep LF endings (CRLF breaks bash and shebangs)
 *.sh text eol=lf
+Dockerfile text eol=lf
+docker-compose.yml text eol=lf
+*.template text eol=lf
+.env.example text eol=lf
